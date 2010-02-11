@@ -1,7 +1,8 @@
 %!PS-Adobe-3.0
 % ------------------------------------------------------------------------
 % File:        genkouyoushi.ps
-% Version:     0.6    (2005-08-16 18:34 CEST)
+% Source:      http://www.metamorpher.de/files/genkouyoushi.ps
+% Version:     0.61   (2005-08-18 02:38 CEST)
 % Description: Japanese Manuscript Paper generator for PS printers,
 %              with configurable sizes, styles, etc.
 %
@@ -19,6 +20,8 @@
 %   First public release.
 % ---- 2005-08-16 18:34 CEST -- Andreas Klauer -- Version 0.6 ----
 %   Fixed some minor bugs. Added Landscape mode and configurable Heading.
+% ---- 2005-08-18 02:38 CEST -- Andreas Klauer -- Version 0.61 ----
+%   Changed the font to a more standard one (included in gs-cjk).
 %
 % ------------------------------------------------------------------------
 
@@ -62,26 +65,28 @@
 %     OR c) number of lines and aspect ratio,
 %     OR d) number of columns and number of lines (result may not be square).
 
+/SquareColumns 17 def
+/SquareAspect  1.0 def
+
+% Examples:
 % a) width and height of single character.
 %    Number of lines and columns will be calculated.
 % /SquareWidth  20 mm def
 % /SquareHeight 20 mm def
-
-% Other examples:
 %
 % % b) number of columns and aspect ratio.
 % %    Size of characters and number of lines will be calculated.
-/SquareColumns  12 def
-/SquareAspect    1 def  % 1: square, >1: higher, <1: wider
+% /SquareColumns  20 def
+% /SquareAspect   1 def  % 1: square, >1: higher, <1: wider
 %
 % % c) number of lines and aspect ratio
 % %    Size of characters and number of columns will be calculated.
 % /SquareLines  10 def
-% /SquareAspect  1 def % 1: square, >1: higher, <1: wider
+% /SquareAspect 0.9 def % 1: square, >1: higher, <1: wider
 %
 % % d) number of columns and number of lines (result may not be square).
 % %    Aspect Ratio and character size will be calculated.
-% /SquareColumns 10 def
+% /SquareColumns 20 def
 % /SquareLines   20 def
 
 % --- Spacing: ---
@@ -95,14 +100,13 @@
 % !!!
 % !!! Be careful that your encoding and aspect ratio matches the font.
 
-/CharacterFont    /WadaMin-Regular-EUC-H def % Name of Font
+/CharacterFont    /Ryumin-Light-RKSJ-H def % Name of Font
 
 % Print characters:
-/CharacterList    [ (¿Í) (°ì) (¥Ë) (»°) (Æü) (»Í) (¸Þ) (Ï») (¼·)
-                    (È¬) (¶å) (½½) (±ß) (É´) (Àé) (Ëü) (·î) (ÌÀ) ] def
+/CharacterList    [ (‚Ð) (‚ç) (‚ª) (‚È) (ƒJ) (ƒ^) (ƒJ) (ƒi) (Š¿) (Žš) ] def
 
 % For each character, print 3, skip 4, print 1. (3+4+1=8 squares per char)
-/CharacterDash    [ 3 4 1 ] def
+/CharacterDash    [ 3 4 ] def
 
 % Adjustments relative to Square size:
 /CharacterScale   0.9  def % If the font isn't scaled right, use this value to adjust.
@@ -115,16 +119,16 @@
 % --- Style: ---
 
 % Specify what to draw:
-/DrawSquare      true def  % draw a square?
-/DrawCharacter   false def  % draw characters?
-/DrawCircle      false def % draw a circle?     (Hiragana practice)
-/DrawCenterline  true def  % draw centerlines?  (Kanji practice)
-/DrawPageBorder  true def % draw border around page?
-/DrawPageHeading true def % draw a heading on top of page?
+/DrawSquare      true  def   % draw a square?
+/DrawCharacter   false def   % draw characters?
+/DrawCircle      false def   % draw a circle?     (Hiragana practice)
+/DrawCenterline  false  def   % draw centerlines?  (Kanji practice)
+/DrawPageBorder  false def   % draw border around page?
+/DrawPageHeading true  def   % draw a heading on top of page?
 
 % Specify dashing styles:
-/DrawSquareDash      [5 5] def     % 5 on, 5 off, ...
-/DrawCircleDash      [2 4] def     % 2 on, 4 off, 2 on, 4 off...
+/DrawSquareDash      [] def     % 5 on, 5 off, ...
+/DrawCircleDash      [3 3] def     % 2 on, 4 off, 2 on, 4 off...
 /DrawCenterlineDash  [1 2 3 4] def % 1 on, 2 off, 3 on, 4 off, 1 on...
 /DrawPageBorderDash  [] def        % solid
 /DrawPageHeadingDash [] def        % solid
