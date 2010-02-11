@@ -1,364 +1,1433 @@
-%!PS-Adobe-3.0
+%!PS
+% ------------------------------------------------------------------------
+% genkouyoushi.ps Japanese Manuscript Paper generator.
+% Copyright (c) 2006 Andreas Klauer
+%
+% This program is free software; you can redistribute it and/or
+% modify it under the terms of the GNU General Public License
+% as published by the Free Software Foundation; either version 2
+% of the License, or (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program; if not, write to the Free Software
+% Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 % ------------------------------------------------------------------------
 % File:        genkouyoushi.ps
 % Source:      http://www.metamorpher.de/files/genkouyoushi.ps
-% Version:     0.61   (2005-08-18 02:38 CEST)
-% Description: Japanese Manuscript Paper generator for PS printers,
-%              with configurable sizes, styles, etc.
-%
-%              This is the first program I ever wrote for Postscript; I am
-%              very unfamiliar with the syntax, so experienced PostScripters
-%              please excuse the amateur style of this program. :)
-%
+% Version:     0.7 (2006-03-27 16:21 CEST)
+% Description: Japanese Manuscript Paper generator.
 % Author:      Andreas Klauer (Andreas.Klauer@metamorpher.de)
-% Inspired by: http://www.nmhq.net/kpaper/, and Mike Rosenlofs genkoyoshi.
+% Inspired by: Kanji Paper Generator (http://www.nmhq.net/kpaper/)
+%              Mike Rosenlof's genkoyoshi.ps
 % License:     GPL-2
 % ------------------------------------------------------------------------
 % Changelog:
-%
 % ---- 2005-08-16 02:15 CEST -- Andreas Klauer -- Version 0.5 ----
 %   First public release.
 % ---- 2005-08-16 18:34 CEST -- Andreas Klauer -- Version 0.6 ----
-%   Fixed some minor bugs. Added Landscape mode and configurable Heading.
-% ---- 2005-08-18 02:38 CEST -- Andreas Klauer -- Version 0.61 ----
-%   Changed the font to a more standard one (included in gs-cjk).
-%
+%   Fixed some minor bugs. Added Landscape mode and configurable Headline.
+% ---- 2006-04-04 16:09 CEST -- Andreas Klauer -- Version 0.7 ----
+%   Complete redesign to make it look more like real genkouyoushi paper.
+%   Several features added, including more flexible specification of
+%   square sizes as well as slightly advanced typesetting capabilities.
+% ---- 2006-09-15 18:45 CEST -- Andreas Klauer -- Version 0.8 ----
+%   Read CJK text from file instead of specifying it in a string, 
+%   so we don't have to escape characters anymore.
+% ------------------------------------------------------------------------
+% Known problems:
+%   - Ghostscript does not support CJK fonts very well. If you're lucky,
+%     your distribution will come with one or two fonts out of the box.
+%     I tried adding CJK fonts manually, but so far, I was not successful.
+%   - Typesetting still requires more work. So far only ShiftJIS is
+%     supported and positioning of small letters and interpuncation
+%     marks is horrible.
 % ------------------------------------------------------------------------
 
-% --- Units: ---
-/inch   { 72 mul } def         % don't change these!!
-/cm     { inch 2.54 div } def
-/mm     { inch 25.4 div } def
+% --- Configuration ---
 
-% --- Paper Size and Orientation: ---
+% Feel free to change the values of the variables below to fit your needs.
+% The meaning of all the variables will be documented here.
 
-% Default is A4 paper. See 'man gs' for other paper sizes.
-/PaperWidth  210 mm def
-/PaperHeight 297 mm def
+% UNITS:
+%     These variables define some basic units like inch, cm and mm.
+%     You should not change these values. Instead, if you want to use
+%     different units, just add them accordingly.
 
-% Default is Landscape mode. Set to false if you want portrait.
-/LandScape true def
+/inch { 72 mul } def         % point multiplied by 72 is inch
+/cm   { inch 2.54 div } def  % inch divided by 2.54 is cm
+/mm   { inch 25.4 div } def  % inch divided by 25.4 is mm
+                             % add your own units here
 
-% % Letter:
-% /PaperWidth  8.5 inch def
-% /PaperHeight 11  inch def
-
-% --- Paper Borders: ---
-/BorderTop      7 mm def
-/BorderBottom   7 mm def
-/BorderLeft     7 mm def
-/BorderRight    7 mm def
-
-% --- Square Size: ---
-
-% Initialization of variables. Do not modify. See below.
-/SquareAspect   0 def
-/SquareColumns  0 def
-/SquareHeight   0 def
-/SquareLines    0 def
-/SquareWidth    0 def
-
-% Choose only one of the following:
+% PAPER:
+%     This section specifies paper size, orientation, and borders.
+%     Please note that the borders only limit the area of the squares.
+%     Headline and Footline may be printed inside the border.
 %
-% Define a) width and height of character size directly,
-%     OR b) number of columns and aspect ratio,
-%     OR c) number of lines and aspect ratio,
-%     OR d) number of columns and number of lines (result may not be square).
-
-/SquareColumns 17 def
-/SquareAspect  1.0 def
-
-% Examples:
-% a) width and height of single character.
-%    Number of lines and columns will be calculated.
-% /SquareWidth  20 mm def
-% /SquareHeight 20 mm def
+%     LandScape:
+%         If set to true, landscape orientation will be used instead
+%         of portrait. Please note that all settings are orientation-
+%         independent, i.e. you do NOT have to change paper dimensions,
+%         borders, etc. when changing the orientation.
 %
-% % b) number of columns and aspect ratio.
-% %    Size of characters and number of lines will be calculated.
-% /SquareColumns  20 def
-% /SquareAspect   1 def  % 1: square, >1: higher, <1: wider
+%     PaperWidth / PaperHeight:
+%         Width and height of the paper format you are printing to.
+%         This is orientation-independent (assume portrait).
 %
-% % c) number of lines and aspect ratio
-% %    Size of characters and number of columns will be calculated.
-% /SquareLines  10 def
-% /SquareAspect 0.9 def % 1: square, >1: higher, <1: wider
+%     BorderTop / BorderBottom / BorderLeft / BorderRight:
+%         Borders sizes on the four sides of the paper.
+%         This is orientation-independent (assume portrait).
+
+/LandScape  true def
+
+/PaperWidth  210 mm def  % for Letter, use 8.5 inch
+/PaperHeight 297 mm def  % for Letter, use 11  inch
+
+/BorderTop    1 cm def
+/BorderBottom 1 cm def
+/BorderLeft   1 cm def
+/BorderRight  1 cm def
+
+% SQUARES:
+%     Here you can set the size of the squares, or the number of
+%     squares you want, or both. The sizes you do not specify
+%     will be calculated by the program on a best page fit basis.
 %
-% % d) number of columns and number of lines (result may not be square).
-% %    Aspect Ratio and character size will be calculated.
-% /SquareColumns 20 def
-% /SquareLines   20 def
+%     ColumnMode:
+%         If set to true, the squares will be printed in columns from the right
+%         to the left (asian style). Otherwise rows will be printed (western).
+%
+%     SquareWidth / SquareHeight:
+%         Dimensions of the square. (optional)
+%         If specified, the program can calculate the optimal number
+%         of rows / columns that fit on the page for you.
+%
+%     SquareAspect:
+%         This is the Aspect Ratio the Squares should have. (optional)
+%         Useful if either Width and/or Height is not specified and you want
+%         your squares to respect a certain aspect ratio, rather than filling
+%         the page completely with distorted squares.
+%
+%     SquareRows / SquareColumns:
+%         Number of rows / columns you want on your page. (optional)
+%         If specified, the program can calculate the optimal square dimensions
+%         that fit on the page for you.
+%
+%     Minimal pairs to be specified are:
+%     - width and height
+%     - width or height and aspect ratio
+%     - columns and rows
+%     - columns and width or rows and height or vice versa
+%       (depends wether you're using columnmode or not)
+%     - columns or rows and aspect ratio
+%
+%     Contradictory pairs you shouldn't use:
+%     - width and height and aspect ratio (aspect will be overwritten)
+%     - width/height and columns/rows that exceeds page limits
+%       (columns/rows will be overwritten)
+%     - insane values for width / height / aspect ratio that prevent
+%       fitting a single square on the page (case is not handled)
 
-% --- Spacing: ---
-/SpaceColumns  1 mm def  % unused space between columns
-/SpaceLines    0 mm def  % unused space between lines
+/ColumnMode    true def
+/SquareWidth   0 def
+/SquareHeight  0 def
+/SquareAspect  1 def
+/SquareRows    20 def
+/SquareColumns 20 def
 
-% --- Font and Characters: ---
+% SPACING:
+%     Define what kind of spacing (if any) there should be. This is used for
+%     enhancing readability by creating visible rows or columns, as well as
+%     for providing a place to write furigana in that help you reading kanji.
+%
+%     SpaceTop / SpaceRight:
+%         Define wether you want a space on the top/bottom (RowMode) or on
+%         the left/right (ColumnMode) side of a square. Usually, Furigana are
+%         on the right/top side. Setting to false will cause the space to
+%         be on the opposite side instead.
+%
+%     SpaceSize:
+%         Set the size you want the space to have, in relation to square size.
+%         Set to zero if you want no space at all.
 
-% !!! If you don't have Japanese font installed, this guide may be of help:
-% !!!     http://igloo.its.unimelb.edu.au/linux-online/ghostscript.html
-% !!!
-% !!! Be careful that your encoding and aspect ratio matches the font.
+/SpaceTop     true  def
+/SpaceRight   true  def
+/SpaceSize    0.4   def
 
-/CharacterFont    /Ryumin-Light-RKSJ-H def % Name of Font
+% FISHTAIL:
+%     The fishtail is a traditional folding marker in the middle of a page.
+%     It has about the same size as a single column. This area is also used
+%     for page numbers, the carver/calligrapher/binder's signature, etc.
+%     Even when not folding the page, it is useful for orientation purposes.
+%
+%     !!! The Fishtail requires your genkouyoushi paper to be symmetric.
+%     !!! Therefore borders and number of columns may be changed.
+%
+%     FishtailSize:
+%         Set the fishtail's size (width in column mode, height in row mode).
+%         Set to zero if you don't want a Fishtail.
+%
+%     FishtailCrease:
+%         Define how deep in the fishtail's crease should be. Usually 0.5 (50%)
+%         is a good value. Nevertheless it might still look stupid. Oh well...
+%
+%     FishtailSegments:
+%         This is an array of triplets: from, to (in percent) and subsegments.
+%
+%         Examples:
+%             0 1 []
+%                 special case: draw border around fishtail area
+%
+%             0.2 0.3 []
+%                 draw solid rectangle from 20 to 30 percent of fishtail area
+%
+%             0.4 0.5 [ 0.0 0.1 0.2 0.8 0.9 1 ]
+%                 draw fishtail symbol from 40 to 50 percent of fishtail area
+%                 the symbol consists of rectangle from 0 to 10 percent,
+%                 creased rectangle from 20 to 80 percent (threshold),
+%                 double creased rectangle from 90 to 100 percent of the
+%                 fishtail symbol area.
+%
+%     FishtailThreshold:
+%         A subsegment of at least that many percent before using Crease.
+%         Subsequent elements (below threshold) will continue using that
+%         crease, creating a |<< shape.
 
-% Print characters:
-/CharacterList    [ (ひ) (ら) (が) (な) (カ) (タ) (カ) (ナ) (漢) (字) ] def
+/FishtailSize      1 cm def
+/FishtailCrease    0.5 def
+/FishtailSegments  [ 0.0 1.0 []
+		     0.20 0.23 [ 0.0 0.10 0.20 0.80 0.90 1.0 ] 
+                     0.667  0.67   []
+                     0.673 0.675   [] ] def
+/FishtailThreshold 0.2 def
 
-% For each character, print 3, skip 4, print 1. (3+4+1=8 squares per char)
-/CharacterDash    [ 3 4 ] def
+% FONT AND CHARACTERS:
+%     Although this program does not really have any typesetting capabilities,
+%     it supports printing of characters into squares to some extent. Here you
+%     can set the font to use, the characters to be printed, and so on.
+%
+%     CharacterFont:
+%         Set the name of the font to be used here. Please note that with
+%         the Japanese fonts we're using here you have to use SHIFT-JIS
+%         character encoding.
+%
+%         NOTE: Only few Ghostscript installations come with working CJK
+%               support, and even those that have it do not provide more
+%               than one or two fonts. YMMV.
+%
+%     CharacterFile:
+%         Read CJK text from a file. It is easy to change encoding of a 
+%         separate file. You also won't have to escape any characters.
+%         CharacterList will be set by reading text from this file.
+%
+%         NOTE: Currently only ShiftJIS encoding and fonts are supported.
+%
+%     CharacterList:
+%         If set to 0, the text will be read from CharacterFile. Otherwise, 
+%         set this to a list of strings to be printed. You may have to escape 
+%         some characters, as GhostScript gets easily confused.
+%
+%         NOTE: It is highly recommended to use CharacterFile instead.
+%
+%     CharacterModifier:
+%         The CharacterList can be post-processed by the following modifiers:
+%         - split_ShiftJIS:
+%             Assumes that the CharacterList contains ShiftJIS encoded strings
+%             and splits them into one string per character, respecting the
+%             multibyte nature of that encoding.
+%         - split_XYZ:
+%             Other encodings are not supported yet, sorry. Contact the author.
+%         - ...
+%
+%     CharacterScale:
+%         The size to use for the font / characters in relation to the size
+%         of the squares. Optimal value depends on the font you are using.
+%         This can also be done automatically (see below).
+%
+%     CharacterXPos:
+%         Adjust the X position of the character in relation to the width of
+%         a single square (0.0 is left end, 1.0 is right end of a square).
+%         The optimal value depends on the font you are using. It can be
+%         detected automatically (see below).
+%
+%     CharacterYPos:
+%         Adjust the Y position of the character in relation to the height of
+%         a single square (0.0 is bottom end, 1.0 is top end of a square).
+%         The optimal value depends on the font you are using. It can be
+%         detected automatically (see below).
+%
+%     CharacterAutoReference:
+%         Set one or more characters here which should be used as reference
+%         for automatic scaling / centering. This works best with character(s)
+%         that utilize the full height and width of the font and which are
+%         perfectly centered as well.
+%
+%         If set to zero, the whole characterlist will be used instead,
+%         which will result in the most brutal and expensive centering
+%         imagineable. If one single character falls out of line, though,
+%         the results will be horrible.
+%
+%     CharacterAutoScale:
+%         The font is automatically scaled in such a way that it optimally
+%         fits CharacterScale percent (specified above) of the height of
+%         a single square.
+%
+%     CharacterAutoCenter:
+%         The CharacterXPos and CharacterYPos will be determined in such a
+%         way that the reference character is in the perfect center of the
+%         square.
 
-% Adjustments relative to Square size:
-/CharacterScale   0.9  def % If the font isn't scaled right, use this value to adjust.
+/CharacterFont    /Ryumin-Light-RKSJ-H def
+% /CharacterFont    /Ryumin-Light-RKSJ-V def
+% /CharacterFont    /GothicBBB-Medium-RKSJ-H def
+% /CharacterFont    /GothicBBB-Medium-RKSJ-V def
+
+/CharacterFile (genkouyoushi.txt) def
+/CharacterList 0 def
+% /CharacterList [ (Alternatively, put some ShiftJIS encoded text here.) ] def
+/CharacterModifier { split_ShiftJIS } def
+
+% Adjust character positioning for this font:
+/CharacterScale   0.9 def  % Adjust character size (1.0 = 100% of square size)
 /CharacterXPos    0.05 def % Adjust XPos of Character here (0.0 = left, 1.0 = right)
 /CharacterYPos    0.15 def % Adjust YPos of Character here (0.0 = bottom, 1.0 = top)
 
-% !!! Only as many characters as fit the squares can actually be printed.
-% !!! Multiple pages are not yet supported, sorry.
+% ..or determine this automatically.
+/CharacterAutoReference 0    def
+/CharacterAutoScale     true def
+/CharacterAutoCenter    true def
 
-% --- Style: ---
 
-% Specify what to draw:
-/DrawSquare      true  def   % draw a square?
-/DrawCharacter   false def   % draw characters?
-/DrawCircle      false def   % draw a circle?     (Hiragana practice)
-/DrawCenterline  false  def   % draw centerlines?  (Kanji practice)
-/DrawPageBorder  false def   % draw border around page?
-/DrawPageHeading true  def   % draw a heading on top of page?
-
-% Specify dashing styles:
-/DrawSquareDash      [] def     % 5 on, 5 off, ...
-/DrawCircleDash      [3 3] def     % 2 on, 4 off, 2 on, 4 off...
-/DrawCenterlineDash  [1 2 3 4] def % 1 on, 2 off, 3 on, 4 off, 1 on...
-/DrawPageBorderDash  [] def        % solid
-/DrawPageHeadingDash [] def        % solid
-
-% Specify line thickness
-/DrawSquareThick      0.5 def
-/DrawCircleThick      0.2 def
-/DrawCenterlineThick  0.2 def
-/DrawPageBorderThick  1   def
-/DrawPageHeadingThick 1   def
-
-% Colors, specified in R G B (0.0 == 0 == 0x00, 1.0 == 255 == 0xFF)
-/DrawSquareColor      [0.2 0.2 0.2] def
-/DrawCharacterColor   [0.8 0.8 0.8] def
-/DrawCircleColor      [0.4 0.4 0.4] def
-/DrawCenterlineColor  [0.4 0.4 0.4] def
-/DrawPageBorderColor  [0.0 0.0 0.0] def
-/DrawPageHeadingColor [0.0 0.0 0.0] def
-
-% Position and Length of Heading
-/DrawHeadingSpace     2 mm def % 2 mm above the border.
-/DrawHeadingStart     0.25 def % Start at 25% of the page
-/DrawHeadingEnd       0.75 def % End at 75% of the page
-
-% --- Maximizing ---
-
-% MaximizeSquares:
-%     After determining number of lines and columns that fit on a page,
-%     the square size will be maximized to print the Squares as big as
-%     possible to fill the page completely.
+% WEIGHTS:
+%     If the sizes of squares, spaces and fishtail specified above do not lead
+%     to an 100% filled page, the output can be maximized to those 100% by
+%     increasing certain lengths and values according to a weight given here.
 %
-% !!! Aspect Ratio will be lost (result may be skewed and unusable)
-/MaximizeSquares  false def
+%     For example, if you give the Fishtail a weight of 3, and the Spacing a
+%     weight of 1, then 3/4 of the free space will be used by the Fishtail,
+%     whereas only 1/4 will be used by the Spacing.
+%
+%     This feature is extremely powerful. For example, instead of actually
+%     maximizing the drawn elements of the page, you can also maximize borders.
+%     For example, if you give the left and right border the same weight, the
+%     result will be in the center, whereas if you give only one side a weight,
+%     it will be oriented left or right of the page.
+%
+%     Per default, only the borders get a weight, so that the result will
+%     be in the center of the page, assuming that the borders are symmetric.
+%     However, if you want to maximize the page, the weight of all borders
+%     should be zero.
+
+/WeightBorderTop 1 def
+/WeightBorderBottom 1 def
+/WeightBorderLeft 1 def
+/WeightBorderRight 1 def
+/WeightSquareWidth 0 def
+/WeightSquareHeight 0 def
+/WeightSpaceSize 0 def
+/WeightFishtailSize 0 def
+
+% BORDER:
+%     Actually, there is nothing to customize about the border (yet),
+%     except for thickness / dashing / color, which will all be handled
+%     below in the STYLE section.
+
+% HEADLINE:
+%     The Headline is a line where you can write the caption of the page.
+%     Here you specify how this Headline should look like. It's always a line,
+%     but you can adjust it's length by defining segments and so on.
+%
+%     HeadlineOffset:
+%         How much free space should there be between the page border and
+%         the headline. Usually this is just a few millimeters, so it doesn't
+%         sit directly on the borderline and doesn't fly high above the page.
+%
+%     HeadlineSegments:
+%         Specify segments in which the headline should be drawn, using pairs
+%         of floating point numbers. These will be interpreted as percent of
+%         the square area. So for example a [ 0.0 100.0 ] segment will draw
+%         a complete line, whereas [ 0.35 0.45 0.55 0.65] will result in two
+%         line segments, one from 35% to 45%, the other from 55% to 65% of
+%         the square area. In other words, it will result in two Headlines,
+%         one of each side of the folding marker.
+
+/HeadlineOffset    2 mm def
+/HeadlineSegments  [ 0.25 0.45 0.55 0.75 ] def
+
+% FOOTNOTE:
+%     The footnote is a short information below the genkouyoushi, usually
+%     telling you information about the paper (rows, columns, total, ...).
+%
+%     FootnoteSize:
+%         Which size to use for the footnote font?
+%
+%     FootnoteOffset:
+%         If you want additional space between border and footnote.
+%         Usually not needed, as the font size should take care of
+%         proper line spacing. However this might not be sufficient
+%         for example when using very thick borders.
+%
+%     FootnoteFont:
+%         Which font to use for the footnote?
+%
+%     FootnotePattern:
+%         It's not sprintf, but you can define what should be printed here.
+%         This is actually a procedure, not a static variable, to allow
+%         accessing variables used by the program (bad style, I know).
+%         For a list of variables, check the head of the program below.
+/FootnoteSize     8 def
+/FootnoteOffset   0 def
+/FootnoteFont     /Times-Roman def
+/FootnotePattern  { [ columns (x) rows (=) columns rows mul ( characters) ] } def
+
+% STYLE:
+%     In this section, you can specify what to draw, and how to draw it.
+%     You can choose what should be drawn or not show up at all, and change
+%     the thickness, dashing, and color of lines.
+%
+%     DrawXYZ:
+%         When set to true, this element will be drawn (unless other settings
+%         prevent this), otherwise it will simply be skipped and invisible.
+%
+%     ColorXYZ:
+%         Specify the color an element should be drawn in. This is an array
+%         which contains three floating point numbers, which will be inter-
+%         preted as RGB values. 1.0 means 100% of that color, 0.0 means 0%.
+%
+%         Examples:
+%             [1.0 0.0 0.0] - red    [0.0 0.0 0.0] - pitch black
+%             [0.0 1.0 0.0] - green  [0.5 0.5 0.5] - grey
+%             [0.0 0.0 1.0] - blue   [1.0 1.0 1.0] - white
+%
+%     ThickXYZ:
+%         Define the thickness of a line. You can use floating point numbers.
+%         About finding good values, simply experiment a bit and you'll see.
+%
+%     DashXYZ:
+%         For elements that are drawn using lines (almost all of them are),
+%         you can specify wether this line should be solid or dashed, and how
+%         exactly the dashing should look like.
+%
+%         The dashing consists of a pattern array which contains length values
+%         (in unit of points), which will be interpreted as on and off states
+%         in alternating order, and an offset, which specifies the number of
+%         points to skip before starting the pattern.
+%
+%         Examples:
+%                  [] 0 - Solid line
+%                 [3] 0 - 3 on, 3 off, 3 on, 3 off, ...
+%                 [2] 1 - 1 on, 2 off, 2 on, 2 off, 2 on, ...
+%               [2 1] 0 - 2 on, 1 off, 2 on, 1 off, 2 on, ...
+%               [3 5] 6 - 2 off, 3 on, 5 off, 3 on, 5 off, ...
+%             [1 2 3] 0 - 1 on, 2 off, 3 on, 1 off, 2 on, 3 off, 1 on, ...
+
+/DrawSquare       true  def   % draw squares?
+/DrawCircle       false def   % draw circles?      (Hiragana practice)
+/DrawCenterline   false def   % draw centerlines?  (Kanji practice)
+/DrawSpacing      false def   % draw spacings?
+/DrawBorder       true  def   % draw border around square area?
+/DrawHeadline     true  def   % draw Headline?
+/DrawFootnote     true  def   % draw footnote?
+/DrawCharacter    false def   % draw characters? (see next section)
+/DrawFishtail     true  def   % draw fishtail?
+
+/ColorSquare      { 0.0 0.0 0.0 } def
+/ColorCircle      { 0.5 0.5 0.5 } def
+/ColorCenterline  { 0.5 0.5 0.5 } def
+/ColorSpacing     { 0.0 0.0 0.0 } def
+/ColorBorder      { 0.0 0.0 0.0 } def
+/ColorHeadline    { 0.0 0.0 0.0 } def
+/ColorFootnote    { 0.0 0.0 0.0 } def
+/ColorCharacter   { 0.0 0.0 0.0 } def
+/ColorFishtail    { 0.0 0.0 0.0 } def
+
+/ThickSquare      0.1  mm def
+/ThickCircle      0.05 mm def
+/ThickCenterline  0.05 mm def
+/ThickSpacing     0.1  mm def
+/ThickBorder      0.25 mm def
+/ThickHeadline    0.2  mm def
+/ThickFishtail    0.15 mm def
+/ThickCharacter   0 def       % Characters will appear outlined if != 0.
+
+/DashSquare       { [ 1 mm 0.5 mm ] 0 } def
+/DashCircle       { [ 1 2 ] 0 } def
+/DashCenterline   { [ 2 2 ] 0 } def
+/DashSpacing      { [] 0 } def
+/DashBorder       { [] 0 } def
+/DashHeadline     { [ 1 mm 0.5 mm ] 0 } def
+/DashFishtail     { [] 0 } def
+/DashCharacter    { [] 0 } def % see ThickCharacter above 
+
+
+
+% OTHER SETTINGS:
+%     This section contains variables that do not fit anywhere else.
+%
+%     Tolerance:
+%         Due to rounding errors, a page may sometimes miss a row/column or two
+%         although it would fit within the printable range of the page. This is
+%         due to rounding errors (the row would fit 0.9999 percent, but not 1.0).
+%
+%         The Tolerance setting defines how big a rounding error may be ignored.
+%         If set too high, columns/rows may visible exceed the border, though.
+%         Under normal circumstances, a very low tolerance is sufficient.
+%         
+%     EmbedFonts:
+%         If this is set to true, all fonts will be embedded. This is useful
+%         when converting to PDF as not many environments offer the fonts
+%         (especially the Japanese ones) we're using here.
+%
+%         Pro:    reesulting PDF will be viewable everywhere
+%         Con:    size of PDF may increase, quality of characters decrease
+
+/Tolerance 0.1 def
+/EmbedFonts true def
 
 % ------------------------------------------------------------------------
 %          Below is the program that generates the Genkou Youshi.
 %           Do not modify it unless you know what you are doing.
 % ------------------------------------------------------------------------
 
-% --- Variables: ---
+% --- Internal Variables: ---
 
-%
-% Complaints about these variable names? I sincerely apologize.
-% But it could be worse... I could've called them i, ii, iii, iiii, iiiii...
-%
+% This is just a list to keep track of internal variables used by the program.
+% The list does not contain variables that are local to a procedure.
 
-/lx 0 def % drawable area A(lx,ly,ux,uy)
-/ux 0 def
-/ly 0 def
-/uy 0 def
-/dx 0 def % x / y deltas
-/dy 0 def
-/tx 0 def % x / y totals (actually used space)
-/ty 0 def
-/ox 0 def % x / y offset (required if used space smaller than actual space
-/oy 0 def %               for centering page content)
-/px 0 def % x / y position P(x,y)
-/py 0 def
-/cx 0 def % x / y square count for the loop
-/cy 0 def
-/cc 0 def % character count - how many squares are required per character?
-/ci 0 def % character index - which character to draw?
-/cn 0 def % nth character to draw
-/cs 0 def % draw or skip?
+/pagematrix 0 def
+/area_lx 0 def          % lower left point of drawable area rectangle L(lx,ly)
+/area_ly 0 def 
+/area_ux 0 def          % upper right point of drawable area rectangle U(ux,uy)
+/area_uy 0 def
+/area_dx 0 def          % dimensions of drawable area for convenience
+/area_dy 0 def
+/width 0 def            % square dimensions
+/height 0 def
+/aspect 0 def           % aspect ratio
+/space 0 def            % space between squares
+/rows 0 def             % number of rows
+/columns 0 def          % number of columns
+/square_index 0 def     % index of current square
+/fishtail_matrix 0 def  % the fishtail matrix
+/crease 0 def           % currently used crease
+/char_index 0 def       % current character
 
-% --- Procedures: ---
+% --- Generic Procedures: ---
 
-%%%%
-% PROCEDURE: not_initialized
+% FUNCTION: min(a, b)
 % DESCRIPTION:
-%     Returns true, if variables are not yet initialized.
-%     Used by layout.
-% SEE ALSO: layout
-%%%%
-/not_initialized
+%     Determine the smaller number and put it on the stack.
+% SEE ALSO: max
+/min
+{
+    /b exch def
+    /a exch def
+
+    a b lt
     {
-        SquareLines 0 eq
-        SquareColumns 0 eq or
-        SquareWidth 0 eq or
-        SquareHeight 0 eq or
-        SquareAspect 0 eq or
-    } def
+        % b is greater than a. put a back on the stack.
+        a
+    }
+    {
+        % a is greater than b. put b back on the stack.
+        b
+    } ifelse
+} bind def
 
-%%%%
-% PROCEDURE: layout
+% FUNCTION: max(a, b)
 % DESCRIPTION:
-%     The layout procedure will calculate the layout of the page according
-%     to the specifications made above. The square size / number of lines /
-%     number of columns / aspect ratio will be calculated to best fit the page.
+%     Determine the greater number and put it on the stack.
+% SEE ALSO: min
+/max
+{
+    /b exch def
+    /a exch def
+
+    a b gt
+    {
+        % b is smaller than a. put a back on the stack.
+        a
+    }
+    {
+        % a is smaller than b. put b back on the stack.
+        b
+    } ifelse
+} bind def
+
+% FUNCTION: rmod(a, b)
+% DESCRIPTION:
+%     Reverse modulo a b
 % SEE ALSO:
-%%%%
-/layout % calls itself recursively!
+/rmod
+{
+    /b exch def
+    /a exch def
+
+    b a b mod sub b mod
+} bind def
+
+% FUNCTION: push_array(arrayA, index, arrayB)
+% DESCRIPTION:
+%     push the arrayB into arrayA at index.
+%     return the new array.
+% SEE_ALSO: pop_array
+/push_array
+{
+    /arrayB exch def
+    /indexA exch def
+    /arrayA exch def
+
+    /arrayN arrayA length arrayB length add array def
+
+    indexA 0 gt
     {
-        LandScape
+        arrayN 0 arrayA 0 indexA getinterval putinterval
+    } if
+
+    arrayN indexA arrayB putinterval
+
+    arrayN indexA arrayB length add arrayA indexA arrayA length indexA sub getinterval putinterval
+
+    arrayN
+
+    % kill the array variables
+    /arrayA 0 def
+    /arrayB 0 def
+    /arrayN 0 def
+} bind def
+
+% FUNCTION: pop_array(arrayA, index, count)
+% DESCRIPTION:
+%     pop count elements of arrayA, starting at index.
+%     return new array
+% SEE ALSO: push_array
+/pop_array
+{
+    /arrayAcount exch def
+    /indexA exch def
+    /arrayA exch def
+
+    /arrayN arrayA length arrayAcount sub array def
+
+    indexA 0 gt
+    {
+        arrayN 0 arrayA 0 indexA getinterval putinterval
+    } if
+
+    arrayN indexA arrayA indexA arrayAcount add arrayA length indexA arrayAcount add sub getinterval putinterval
+
+    arrayN
+
+    % kill the array variables
+    /arrayA 0 def
+    /arrayN 0 def
+} bind def
+
+% --- Typesetting Procedures: ---
+
+% FUNCTION: show
+% DESCRIPTION:
+%     If EmbedFonts is enabled, replace the show operator with a fill operation.
+% SEE ALSO:
+EmbedFonts
+{
+    /show
+    {
+        dup stringwidth
+        currentpoint 
+	5 4 roll
+        true charpath fill
+	moveto
+	rmoveto
+    } bind def
+} if
+
+% FUNCTION: cshow
+% DESCRIPTION:
+%     This is a special show command for characters. It will do exactly the same
+%     as the normal show unless a thickness was specified for characters, in which
+%     case the characters will be drawn outlined. This function does not have any
+%     real use however...
+% SEE ALSO:
+ThickCharacter 0 eq
+{
+    /cshow { ColorCharacter setrgbcolor show } bind def
+}
+{
+    /cshow
+    {
+        ColorCharacter setrgbcolor
+	ThickCharacter setlinewidth
+	DashCharacter setdash
+	
+	dup stringwidth
+	currentpoint
+	5 4 roll
+	false charpath stroke
+	moveto
+	rmoveto
+    } bind def
+} ifelse
+
+% FUNCTION: to_string(array)
+% DESCRIPTION:
+%     Convert array to string.
+% SEE ALSO:
+/to_string
+{
+    % Create a reference string.
+    dup length string exch
+
+    % Add index starting at zero.
+    0 exch
+
+    % Stack: string index array
+    {
+	% copy these three elements and put, causing the array element
+	% to be set as character into string at index
+	3 copy put
+
+	% pop unnecessary copied array element
+	pop
+
+	% increase index by 1
+	1 add
+    }
+    forall
+
+    % pop unnecessary index
+    pop
+} bind def
+
+% FUNCTION: split_ShiftJIS(CharacterList)
+% DESCRIPTION:
+%     Takes strings from the characterlist and splits them, so that
+%     the list contains only strings that make up one character each.
+%     This depends on the encoding for multi-byte charsets. In this
+%     case we are assuming ShiftJIS Japanese encoding.
+% SEE ALSO:
+/split_ShiftJIS
+{
+    % Build a new list
+    [
+        % Go through the supplied list, split it, and stuff into new list.
+        exch
         {
-            % Switch PaperHeight and PaperWidth.
-            PaperHeight PaperWidth /PaperHeight exch def /PaperWidth exch def
+	    dup type (stringtype) eq
+	    {
+		% build one array per character
+		[ exch
+		
+		% This is a string. Loop through.it.
+		{
+		    counttomark 1 eq exch % (we're at the first byte
+		    dup 16#81 ge exch     %  && (byte >= 0x81
+		    dup 16#9F le exch     %      && byte <= 0x9f)
+		    dup 16#E0 ge exch     %  || (byte >= 0xE0
+		    dup 16#FC le exch     %      && byte <= 0xFC))
+		    6 1 roll
+		    and and or and
+		    {
+			% this is a multibyte. just leave it on the stack.
+		    }
+		    {
+			% convert to string, begin new string
+		        ] to_string [ 
+		    } ifelse
+		} forall
 
-            % Rotate Borders.
-            BorderTop BorderBottom BorderLeft BorderRight
-                /BorderBottom exch def /BorderTop exch def
-                /BorderLeft exch def /BorderRight exch def
+		% what's left is either empty or undefined. pop it.
+		] pop
+	    } if
+        } forall
+    ] % Put new list on the stack.
+} bind def
 
-            % Rotate coordinate system for Landscape mode.
-            % Thanks to the Postscript FAQ for this rotation code.
-            /oldshowpage /showpage load def
+% FUNCTION: prepare_typesetting
+% DESCRIPTION:
+%     If drawing of characters is enabled, do first preparations here.
+%     This function does postprocessing of the character list as well
+%     as autoscaling.
+% SEE ALSO:
+/prepare_typesetting
+{
+    DrawCharacter
+    {
+        CharacterList 0 eq
+        {
+            % Read CharacterList string from file.
+            /CharacterFile CharacterFile (r) file def
 
-            90 rotate 0 PaperHeight neg translate   % for the first page
-            /showpage
-            {
-                oldshowpage
-                90 rotate 0 PaperHeight neg translate
-            } def
-
-            /LandScape false def % to avoid recursion.
+            % Build the CharacterList by completely reading the input file.
+            /CharacterList [ 
+                CharacterFile                        % the input file itself
+                CharacterFile bytesavailable string  % allocate read buffer of same size
+                readstring pop % read it and pop return/success value
+            ] def
         } if
 
-        /lx BorderLeft def
-        /ly BorderBottom def
-        /ux PaperWidth BorderRight sub def
-        /uy PaperHeight BorderTop sub def
+	% Post-Process the CharacterList.
+	/CharacterList CharacterList CharacterModifier def
 
-        /dx ux lx sub def
-        /dy uy ly sub def
+	% Set CharacterAutoReference if not specified.
+	/CharacterAutoReference
+	    CharacterAutoReference 0 eq
+	    {
+		CharacterList
+	    }
+	    {
+		CharacterAutoReference
+	    }
+	    ifelse
+	def
 
-        % Step 1: Calculate width, height, columns, lines, aspect
+	% Load font as it's required for the following functions.
+	CharacterFont findfont height CharacterScale mul scalefont setfont
 
-        % a) width & height
-        SquareWidth 0 ne  SquareHeight 0 ne  and not_initialized and
+	% Should we scale characters automatically?
+	CharacterAutoScale
+	{
+	    % To prevent unnecessary repeated scaling.
+	    /CharacterAutoScale false def
+
+	    /desired_height height CharacterScale mul def
+
+	    CharacterAutoReference
+	    {
+		dup type (stringtype) eq
+		{
+		    % move to some point and create path for the reference character.
+		    0 0 moveto true charpath
+
+		    % get a bounding box (lx ly ux uy) for this path
+		    pathbbox
+
+		    % We don't need this path anymore, kill it.
+		    newpath
+
+		    exch pop 3 2 roll pop % pop lx/ux
+
+		    count 4 eq
+		    {
+			3 2 roll max 3 1 roll min exch
+		    } if
+		}
+		{
+		    % control
+		    pop
+		} ifelse
+	    } forall
+	    
+	    /puy exch def
+	    /ply exch def
+
+	    /pdy puy ply sub def
+
+	    % Adjust scale by ideal height / current height difference.
+	    pdy Tolerance gt
+	    {
+		/CharacterScale desired_height pdy div CharacterScale mul def
+	    } if
+
+	    % Update font to new scale.
+	    CharacterFont findfont height CharacterScale mul scalefont setfont
+	} if
+
+	% Should we center characters automatically?
+	CharacterAutoCenter
+	{
+	    % To prevent unnecessary repeated centering.
+	    /CharacterAutoCenter false def
+
+	    CharacterAutoReference
+	    {
+		dup type (stringtype) eq
+		{
+   		    % move to 0 0 and create path for reference character
+		    0 0 moveto true charpath
+
+		    % get a bounding box (lx ly ux uy) for this path
+		    pathbbox
+
+ 		    % We don't need this path anymore, kill it
+		    newpath
+
+		    count 8 eq
+		    {
+			2 { 7 index 4 index min } repeat
+			2 { 7 index 4 index max } repeat
+			12 4 roll
+			8 { pop } repeat
+		    } if
+		}
+		{
+		    % control
+		    pop
+		} ifelse
+	    } forall
+
+	    % Aktuelle Position und Dimension sammeln.
+	    /puy exch def
+	    /pux exch def
+	    /ply exch def
+	    /plx exch def
+	    /pdy puy ply sub def
+	    /pdx pux plx sub def
+
+	    % Gewuenschte Position feststellen:
+	    /ox width 2 div pdx 2 div sub def
+	    /oy height 2 div pdy 2 div sub def
+
+	    % Offset berechnen
+	    /CharacterXPos ox plx sub width div def
+	    /CharacterYPos oy ply sub height div def
+	} if
+    } if
+} bind def
+
+% --- Layout Procedures: ---
+
+% FUNCTION: area(width, height, top, bottom, left, right)
+% DESCRIPTION:
+%     Determine the maximum drawable area and it's offset from the page.
+%     This area may shrink later if it's not possible to fill completely
+%     due to square size and other layout problems.
+% SEE ALSO: layout
+/area
+{
+    /right exch def
+    /left exch def
+    /bottom exch def
+    /top exch def
+    /height exch def
+    /width exch def
+
+    % Does the area have to have a symmetric center?
+    FishtailSize 0 gt
+    {
+        ColumnMode
         {
-            % SquareLines = floor((dy + SpaceLines) /
-            %                      (SquareHeight + SpaceLines))
-            /SquareLines  dy SpaceLines add
-                          SquareHeight SpaceLines add
-                          div cvi def
-
-            % SquareColumns = floor((dx + SpaceColumns) /
-            %                        (SquareWidth + SpaceColumns))
-            /SquareColumns dx SpaceColumns add
-                           SquareWidth SpaceColumns add
-                           div cvi def
-
-            % SquareAspect = SquareHeight / SquareWidth
-            /SquareAspect SquareHeight SquareWidth div def
-        } if
-
-        % b) columns & aspect
-        SquareColumns 0 ne  SquareAspect 0 ne  and not_initialized and
-        {
-            % SquareWidth = (dx + SpaceColumns / SquareColumns) - SpaceColumns
-            /SquareWidth dx SpaceColumns add  SquareColumns div
-                         SpaceColumns sub def
-
-            % SquareHeight = SquareWidth * SquareAspect
-            /SquareHeight SquareWidth SquareAspect mul def
-
-            % SquareLines = floor((dy + SpaceLines) /
-            %                      (SquareHeight + SpaceLines))
-            /SquareLines dy SpaceLines add
-                            SquareHeight SpaceLines add
-                            div cvi def
-        } if
-
-        % c) lines & aspect
-        SquareLines 0  ne  SquareAspect 0 ne  and not_initialized and
-        {
-            % SquareHeight = ((dy + SpaceLines) / SquareLines) - SpaceLines
-            /SquareHeight dy SpaceLines add  SquareLines div
-                          SpaceLines sub def
-
-            % SquareWidth = SquareHeight / SquareAspect
-            /SquareWidth SquareHeight SquareAspect div def
-
-            % SquareColumns = floor((dx + SpaceColumns) /
-            %                        (SquareWidth + SpaceColumns))
-            /SquareColumns dx SpaceColumns add
-                           SquareWidth SpaceColumns add
-                           div cvi def
-        } if
-
-        % d) columns & lines
-        SquareColumns 0 ne  SquareLines 0 ne  and not_initialized and
-        {
-            % SquareWidth = ((dx + SpaceColumns) / SquareColumns)
-            %                - SpaceColumns
-            /SquareWidth dx SpaceColumns add  SquareColumns div
-                         SpaceColumns sub def
-
-            % SquareHeight = ((dy + SpaceLines) / SquareLines) - SpaceLines
-            /SquareHeight dy SpaceLines add  SquareLines div
-                          SpaceLines sub def
-
-            % SquareAspect = SquareHeight / SquareWidth
-            /SquareAspect = SquareHeight SquareWidth div
-        } if
-
-        % Step 2: Calculate actually used space and page centering offset.
-        /tx SquareWidth SpaceColumns add  SquareColumns mul
-            SpaceColumns sub def
-        /ty SquareHeight SpaceLines add  SquareLines mul
-            SpaceLines sub def
-        /ox dx tx sub  2 div def
-        /oy dy ty sub  2 div def
-
-        MaximizeSquares
-        {
-            % Keep number of columns and lines and calculate everything again.
-            % This will cause the page to be filled at maximum, but result
-            % might be rectangular because aspect ratio is lost.
-            /SquareWidth 0 def
-            /SquareHeight 0 def
-            /SquareAspect 0 def
-            /MaximizeSquares false def % to avoid endless recursion
-            layout % recursive call
+            % Make sure we got same borders on left/right side in ColumnMode
+            /left left right max def
+            /right left def
         }
         {
-            DrawCharacter
-            {
-                % load font for later drawing
-                CharacterFont findfont
-                SquareHeight CharacterScale mul scalefont
-                setfont
-            } if
+            % Make sure we got same borders on top/bottom side in RowMode
+            /top top bottom max def
+            /bottom top def
         } ifelse
-    } def
+    } if
 
-%%%%
-% PROCEDURE: ellipse (x y xr yr)
+    % Set area coordinates and dimensions
+    /area_lx left def
+    /area_ly bottom def
+    /area_ux width right sub def
+    /area_uy height top sub def
+    /area_dx area_ux area_lx sub def
+    /area_dy area_uy area_ly sub def
+} bind def
+
+% FUNCTION: distribute(pool, * vars, * weights, * fractions)
 % DESCRIPTION:
-%     Procedure taken from Usenet:
+%     This function distributes a pool of a certain value (leftover space)
+%     to a certain set of variables (elements of width) corresponding to
+%     their weight.
+%
+%     This function is used to help distributing leftover space among elements
+%     in order to maximize utilization of space.
+%
+%     Example: If pool is 100, vars are [ /a /b /c ], weights are [ 0.5 1.5 3 ]
+%              then /a will be increased by 10, /b by 30, /c by 60.
+%
+%     Additionally, fractions can be specified to account for elements that
+%     occur more than once on the page, so the sum will again be the total
+%     added amount. Substraction can be achieved by using a negative fraction.
+%
+%     The given arrays must all have the same size.
+% SEE ALSO: layout
+/distribute
+{
+    /fractions exch def
+    /weights exch def
+    /vars exch def
+    /pool exch def
+    /totalweight 0 def
+
+    % Is there anything to distribute?
+    % Anything below Tolerance is most likely just rounding error.
+    pool Tolerance gt
+    {
+        % Collect all the weights first
+        weights
+        {
+            /totalweight exch totalweight add def
+        } forall
+
+        % Are there any weights?
+        totalweight 0 gt
+        {
+            % Alright, let's distribute it.
+            0 1 weights length 1 sub
+            {
+                % Get the index and weight.
+                /i exch def
+                /weight weights i get def
+
+                % Does this one have a weight?
+                weight 0 gt
+                {
+                    vars i get                       % the variable name
+                        pool weights i get mul       % pool * weight
+                        totalweight div              % / totalweight
+                        fractions i get div          % / fraction
+                    vars i get load add def          % + current value
+                } if
+            } for
+        } if
+    } if
+} bind def
+
+% FUNCTION: layout
+% DESCRIPTION:
+%     This procedure used the variables specified above to calculate the basic
+%     page layout, i.e. it will take the PaperSize, substract the borders to
+%     get the size of the drawable area, calculate the number of columns and
+%     the square size to be printed, and so on. In other words, it initializes
+%     the program's internal variables that are required to draw the page.
+% SEE ALSO: area, drawpage
+/layout
+{
+    % Step 1: determine drawable area
+    LandScape
+    {
+        % we are in landscape mode
+	PaperHeight PaperWidth BorderLeft BorderRight BorderTop BorderBottom area
+
+        % rotate & move coordinate system so we can draw normally.
+        90 rotate 0 PaperWidth neg translate
+    }
+    {
+        % we are in portrait mode
+	PaperWidth PaperHeight BorderTop BorderBottom BorderLeft BorderRight area
+    } ifelse
+
+    /pagematrix matrix currentmatrix def
+
+    % Step 2: In case of Fishtail, divide area and number of Columns/Rows by half.
+    FishtailSize 0 gt
+    {
+        ColumnMode
+        {
+            /area_dx area_dx FishtailSize sub 2 div def
+            /SquareColumns SquareColumns 2 div floor cvi def
+        }
+        {
+            /area_dy area_dy FishtailSize sub 2 div def
+            /SquareRows SquareRows 2 div floor cvi def
+        } ifelse
+    } if
+
+    % Step 3: determine number and sizes of squares and spacing
+
+    % Since we may change the values, use internal variables.
+    /width SquareWidth def
+    /height SquareHeight def
+    /aspect SquareAspect def
+    /rows SquareRows def
+    /columns SquareColumns def
+    /space SpaceSize def
+    % !!! space is relative until we set absolute value later.
+
+    % Get width first. Calculate everything later.
+    width 0 eq
+    {
+	
+	% Case 1: if height and aspect is given, this determines width.
+	height 0 gt aspect 0 gt and
+	{
+	    /width height aspect mul def
+	}
+	{
+	    % Case 2: We have to rely on Columns and Rows+Aspect.
+	    %         In case both are given, use smaller width to make both fit.
+	    columns 0 gt
+	    {
+		
+		ColumnMode
+		{
+
+		    /width area_dx 1 space add columns mul div def
+		}
+		{
+		    /width area_dx columns div def
+		} ifelse
+
+	    } if
+
+	    rows 0 gt aspect 0 gt and
+	    {
+		
+		% Push height on the stack.
+		ColumnMode
+		{
+		    area_dy rows div
+	        }
+		{
+		    area_dy rows 1 space add mul div
+		} ifelse
+
+		% Convert height to width using aspect
+		aspect mul
+
+
+		% If we already set Width above, keep the one that's smaller.
+		width 0 gt
+		{
+		    width min /width exch def
+		}
+		{
+		    /width exch def
+		} ifelse
+	    } if
+
+	    % Case 3: If we still have no width, not enough information was specified.
+	    %         Cope with it by setting default values.
+	    width 0 eq
+	    {
+		% Case 3a: If a height is given, just use that. (AspectRatio=1)
+		height 0 gt
+		{
+		    /width height def
+		}
+		{
+		    % Case 3b: If rows are given, just use that. (AspectRatio=1)
+		    rows 0 gt
+		    {
+			% Push height on the stack.
+			ColumnMode
+			{
+			    area_dy rows div
+			}
+			{
+			    area_dy rows 1 space add mul div
+			} ifelse
+
+			/width exch def
+		    }
+		    {
+			% Case 3c: Nothing was given at all. Use 20x20.
+			/columns 20 def
+			/rows 20 def
+
+			% Giving nothing but aspect ratio is stupid but who cares.
+			aspect 0 eq
+			{
+  			    /aspect 1 def
+			} if
+
+			% This is pretty much step 2 again.
+                        FishtailSize 0 gt
+                        {
+			    ColumnMode
+			    {
+				/columns columns 2 div floor cvi def
+			    }
+			    {
+				/rows rows 2 div floor cvi def
+			    } ifelse
+			} if
+
+			% This is pretty much case 3b again.
+			% Push height on the stack.
+			ColumnMode
+			{
+			    area_dy rows div
+			}
+			{
+			    area_dy rows 1 space add mul div
+			} ifelse
+
+			/width exch def
+		    } ifelse
+		} ifelse
+	    } if
+	} ifelse
+    } if
+
+    % From here on, the width is known. Anything else may be missing though.
+
+    % If height is also given, calculate aspect ratio.
+    height 0 gt
+    {
+	/aspect width height div def
+    }
+    {
+	% If aspect ratio is also given, calculate height.
+	aspect 0 gt
+	{
+	    /height width aspect div def
+	}
+	{
+	    % Neither width nor aspect is given. Use Rows/Columns.
+	    ColumnMode
+	    {
+		% in columnmode, height depends on number of rows.
+		rows 0 gt
+		{
+		    /height area_dy rows div def
+		    /aspect width height div def
+		}
+		{
+		    % rows is not specified.
+		    % Use standard aspect ratio of 1.
+		    /aspect 1 def
+		    /height width def
+		} ifelse
+	    }
+	    {
+		% in rowmode, height depends on number of rows and spacing
+		rows 0 gt
+		{
+		    /height area_dy rows 1 space add mul div def
+		    /aspect width height div def
+		}
+		{
+		    % rows is not specified.
+		    % Use standard aspect ratio of 1.
+		    /aspect 1 def
+		    /height width def
+		} ifelse
+	    } ifelse
+	} ifelse
+    } ifelse
+
+    % Sanity check for width and height.
+    width area_dx gt
+    {
+	ColumnMode
+	{
+            /width area_dx 1 space add div def
+	}
+	{
+	    /width area_dx def
+	} ifelse
+    } if
+
+    height area_dy gt
+    {
+	ColumnMode
+	{
+	    /height area_dy def
+	}
+	{
+	    /height area_dy 1 space add div def
+	} ifelse
+    } if
+
+    /aspect width height div def
+
+    % Sanity check for rows and columns (which may not be set yet).
+    % Use Tolerance to prevent columns which would fit to 99.99%
+    % from being dropped, as this is likely just a rounding error.
+    ColumnMode
+    {
+	columns 0 eq width 1 space add mul columns mul area_dx sub Tolerance gt or
+	{
+	    /columns area_dx width 1 space add mul div floor cvi def
+	} if
+
+	rows 0 eq height rows mul area_dy sub Tolerance gt or
+	{
+	    /rows area_dy height div floor cvi def
+	} if
+    }
+    {
+	columns 0 eq width columns mul area_dx sub Tolerance gt or
+	{
+	    /columns area_dx width div floor cvi def
+	} if
+
+	rows 0 eq height 1 space add mul rows mul area_dy sub Tolerance gt or
+	{
+	    /rows area_dy height 1 space add mul div floor cvi def
+	} if
+    } ifelse
+
+    % !!! space will be absolute from here on.
+    ColumnMode
+    {
+        /space width space mul def
+    }
+    {
+        /space height space mul def
+    } ifelse
+
+    % Step 4: In case of Fishtail, restore area_size and number of Rows/Columns again.
+    FishtailSize 0 gt
+    {
+        ColumnMode
+        {
+            /area_dx area_dx 2 mul FishtailSize add def
+            /columns columns 2 mul def
+        }
+        {
+            /area_dy area_dy 2 mul FishtailSize add def
+            /rows rows 2 mul def
+        } ifelse
+    } if
+
+    % Step 5: Determine unused space and distribute according to weight.
+    ColumnMode
+    {
+        /unused_x area_dx width space add columns mul sub FishtailSize sub def
+        /unused_y area_dy height rows mul sub def
+
+	LandScape
+        {
+            unused_x [ /width /space /FishtailSize /area_lx /area_ux ]
+                     [ WeightSquareWidth WeightSpaceSize WeightFishtailSize
+                       WeightBorderTop WeightBorderBottom ]
+                     [ columns columns 1 1 -1 ]
+            distribute
+
+            unused_y [ /height /area_ly /area_uy ]
+                     [ WeightSquareHeight WeightBorderLeft WeightBorderRight ]
+                     [ rows 1 -1 ]
+            distribute
+        }
+        {
+            unused_x [ /width /space /FishtailSize /area_lx /area_ux ]
+                     [ WeightSquareWidth WeightSpaceSize WeightFishtailSize
+                       WeightBorderLeft WeightBorderRight ]
+                     [ columns columns 1 1 -1 ]
+            distribute
+
+            unused_y [ /height /area_ly /area_uy ]
+                     [ WeightSquareHeight WeightBorderTop WeightBorderBottom ]
+                     [ rows 1 -1 ]
+            distribute
+        } ifelse
+    }
+    {
+        /unused_x area_dx width columns mul sub def
+        /unused_y area_dy height space add rows mul sub FishtailSize sub def
+
+	LandScape
+        {
+            unused_x [ /width /area_lx /area_ux ]
+                     [ WeightSquareWidth WeightBorderTop WeightBorderBottom ]
+                     [ columns 1 -1 ]
+            distribute
+
+            unused_y [ /height /space /FishtailSize /area_ly /area_uy ]
+                     [ WeightSquareHeight WeightSpaceSize WeightFishtailSize
+                       WeightBorderLeft WeightBorderRight ]
+                     [ rows rows 1 1 -1 ]
+            distribute
+        }
+        {
+            unused_x [ /width /area_lx /area_ux ]
+                     [ WeightSquareWidth WeightBorderLeft WeightBorderRight ]
+                     [ columns 1 -1 ]
+            distribute
+
+            unused_y [ /height /space /FishtailSize /area_ly /area_uy ]
+                     [ WeightSquareHeight WeightSpaceSize WeightFishtailSize
+                       WeightBorderTop WeightBorderBottom ]
+                     [ rows rows 1 1 -1 ]
+            distribute
+        } ifelse
+    } ifelse
+
+    % We may have changed the area coordinates above.
+    % Update the dimensions we keep for convenience here.
+    /area_dx area_ux area_lx sub def
+    /area_dy area_uy area_ly sub def
+
+    % Same goes for aspect ratio
+    /aspect width height div def
+} bind def
+
+% --- Drawing Procedures: ---
+
+% FUNCTION: position(column, row)
+% DESCRIPTION:
+%     Calculate the absolute position of the lower left corner of a square.
+%     The square in question is identified by the column and row it is in.
+%     Counting of columns and rows starts at 1.
+%
+%     In ColumnMode, 1 1 is the top-right square, 1 2 is the one below it,
+%     2 1 is the one left from it, and so on.
+%
+%     In RowMode, 1 1 is the top-left square, 2 1 is the one right from it,
+%     1 2 is the one below it, and so on.
+%
+%     The absolute position px py will be left on the stack.
+% SEE ALSO:
+/position
+{
+    /p_row exch def
+    /p_column exch def
+
+    ColumnMode
+    {
+        % start from the top right
+        /px area_ux def
+        /py area_uy def
+
+        % go down by rows
+        /py py height p_row mul sub def
+
+        % go left by columns
+        /px px width space add p_column mul sub def
+
+        % add spacing if it's on the left
+        SpaceRight false eq
+        {
+            /px px space add def
+        } if
+
+        % substract fishtail size if we're past the middle
+        p_column columns 2 div gt
+        {
+            /px px FishtailSize sub def
+        } if
+    }
+    {
+        % start from the top left (plus one invisible column)
+        /px area_lx width sub def
+        /py area_uy def
+
+        % go right by columns
+        /px px width p_column mul add def
+
+        % go down by rows
+        /py py height space add p_row mul sub def
+
+        % add spacing if it's on the bottom
+        SpaceTop false eq
+        {
+            /py py space add def
+        } if
+
+        % substract fishtail size if we're past the middle
+        p_row rows 2 div gt
+        {
+            /py py FishtailSize sub def
+        } if
+    } ifelse
+
+    % leave the position on the stack
+    px py
+} bind def
+
+% FUNCTION: ellipse(px, py, dx, dy)
+% DESCRIPTION:
+%     Inspired by a procedure posted on Usenet:
 %
 %         From: Henry McGilton <h...@trilithon.com>
 %         Subject: Re: Drawing ellipses with wide lines
@@ -367,187 +1436,645 @@
 %
 %     Thank you!
 %
+%     Draw an ellipse into a (imaginary) rectangle.
+%
 %     Ideally we'd only need a circle (with square aspect ratio == 1),
 %     but with squares that are not perfectly square we need Ellipse.
 %     This procedure makes otherwise complicated ellipse drawing easy.
-% SEE ALSO: DrawSquare
-%%%%
+% SEE ALSO: rectangle, centerline
 /ellipse
-    {                                   %  stack = x y xr yr
-        matrix currentmatrix            %  remember CTM
-        5 3 roll translate              %  translate coordinate system
-        3 1 roll scale                  %  scale coordinate system
-        0 0 1 0 360 arc closepath       %  draw circle
-        setmatrix                       %  restore CTM
-    } def
+{
+    2 div /ry exch def % get Y-radius from Y-diameter
+    2 div /rx exch def % get X-radius from X-diameter
+    /py exch def
+    /px exch def
 
-%%%%
-% PROCEDURE: draw_square
+    matrix currentmatrix          % push current matrix onto stack
+    px rx add py ry add translate % move coordinate system to center
+    rx ry scale                   % scale coordinate system to rectangle
+    0 0 1 0 360 arc closepath     % draw scaled circle
+    setmatrix                     % restore previously pushed CTS
+} bind def
+
+% FUNCTION: rectangle(x, y, dx, dy)
 % DESCRIPTION:
-%     Draw square number (cx,cy) in the style that was configured above.
-%     This procedure draws square, circle, centerlines, ...
-% SEE ALSO: ellipse
-%%%%
-/draw_square
+%     Draw a rectangle at position P(x,y) with dimensions P(dx,dy).
+%     While this function is used for several quadratic / rectangular shapes,
+%     it is NOT used for the squares themselves, because we don't want to
+%     draw lines twice (bad for dashing).
+% SEE ALSO: ellipse, centerline
+/rectangle
+{
+    /dy exch def
+    /dx exch def
+
+    % x y remain on stack
+    moveto
+    0 dy rlineto
+    dx 0 rlineto
+    0 dy neg rlineto
+    closepath
+} bind def
+
+% FUNCTION: centerline(x, y, dx, dy)
+% DESCRIPTION:
+%     Draw two lines into the center of a (imaginary) rectangle.
+% SEE ALSO: rectangle, ellipse
+/centerline
+{
+    /dy exch def
+    /dx exch def
+    /y exch def
+    /x exch def
+
+    % draw X line
+    x y dy 2 div add moveto
+    dx 0 rlineto
+
+    % draw Y line
+    x dx 2 div add y dy add moveto
+    0 dy neg rlineto
+} bind def
+
+% FUNCTION: character
+% DESCRIPTION:
+%     Draw a character at the current point (lower left corner of square).
+%     The character is retrieved from the CharacterList. With each call
+%     to this function, the index of this list will be incremented by 1.
+%
+%     The CharacterList may contain the following elements:
+%
+%         1 (one):
+%             This is a newline which won't leave columns / rows
+%             completely empty. Jumps to the first square of the
+%             next column / row, if not already there.
+%
+%        -1 (minus one):
+%             This is a more aggressive newline which will leave
+%             one completely empty column / row.
+%
+%         2 (two):
+%             This is a new paragraph. Works like 1, but will skip
+%             one additional square.
+%
+%        -2 (minus two):
+%             This is a more convenient way of writing '-1 2'. It will
+%             leave an empty column / row and skip one square.
+%
+%         3 (three):
+%             Skip all squares until end of page, so the next square
+%             will start on a new page. Do not skip if we are already
+%             at the beginning of a page.
+%
+%        -3 (minus three):
+%             This is a more aggressive newpage which will leave one
+%             page completely empty, whatever you'd need that for.
+%
+%         4 (four):
+%             Like 3, but skip only half a page (which could be regarded
+%             as a page when using Fishtail).
+%
+%        -4 (minus four):
+%             Like 4, but leave one half-page completely empty.
+%
+%         Everything else will be assumed to be a string (single character)
+%         and printed accordingly.
+% SEE ALSO: square
+/character
+{
+    % pop the array if we're already past one page
+    CharacterList length char_index gt
+    char_index rows columns mul gt and
     {
-        % my_px = BorderLeft + ox + (SquareWidth + SpaceColumns) * cx
-        /my_px BorderLeft ox add  SquareWidth SpaceColumns add  cx mul add def
+	/CharacterList CharacterList 0 rows columns mul pop_array def
+	/char_index char_index rows columns mul sub def
+    } if
 
-        % my_py = BorderBottom + oy + (SquareHeight + SpaceLines) * cy
-        /my_py BorderBottom oy add  SquareHeight SpaceLines add  cy mul add def
+    ColumnMode
+    {
+	columns rows
+    }
+    {
+	rows columns
+    } ifelse
 
-        % Draw the elements as requested:
+    /lol exch def % length of a line
+    /nol exch def % number of lines
+    
+    % Loop, as some control sequences may be combined.
+    {
+	CharacterList length char_index gt
+	{
+	    % Push value on stack
+	    CharacterList char_index get
 
-        DrawSquare
+	    % Is this a character?
+	    dup type (stringtype) eq
+	    {
+		% Plot the character and exit.
+		square_x CharacterXPos width mul add
+		square_y CharacterYPos height mul add
+		moveto cshow
+		
+		exit
+	    }
+	    {
+		/char_control exch def
+
+		% pop this control thing from the array.
+		/CharacterList CharacterList char_index 1 pop_array def
+
+		% No matter which control character it is,
+		% skip current row if we're not at the beginning of it.
+		/spaceadd char_index lol rmod def
+
+		char_control -1 eq char_control -2 eq or
+		{
+		    % additionally, skip one complete row.
+		    /spaceadd spaceadd lol add def
+		} if
+
+		char_control abs 2 eq
+		{
+		    % skip one more
+		    /spaceadd spaceadd 1 add def
+		} if
+
+		char_control abs 4 eq
+		{
+		    % use half page instead
+		    /nol nol 2 div floor cvi def
+		} if
+
+		char_control abs 3 eq char_control abs 4 eq or
+		{
+		    % skip til end of page if necessary
+		    /spaceadd spaceadd char_index spaceadd add lol nol mul rmod add def
+		} if
+
+		char_control -3 eq char_control -4 eq or
+		{
+		    % additionally, skip a whole page
+		    /spaceadd spaceadd lol nol mul add def
+		} if
+
+		/CharacterList CharacterList char_index [ spaceadd { ( ) } repeat ] push_array def
+	    } ifelse
+	}
+	{
+	    % we reached the end of the array
+	    exit
+	} ifelse
+    } loop
+
+    /char_index char_index 1 add def
+} bind def
+
+% FUNCTION: square(x, y)
+% DESCRIPTION:
+%     For each square, this procedure is called with the lower left corner
+%     of the square as argument. Here the contents of the square are drawn.
+%     Contents can be centerline, circle, or a character.
+% SEE ALSO: ellipse, centerline, character
+/square
+{
+    % We need the position frequently, so save it.
+    /square_y exch def
+    /square_x exch def
+
+    % Draw centerline.
+    DrawCenterline
+    {
+        square_x square_y width height centerline
+
+        DashCenterline setdash
+        ThickCenterline setlinewidth
+        ColorCenterline setrgbcolor
+        stroke
+    } if
+
+    % Draw ellipse.
+    DrawCircle
+    {
+        square_x square_y width height ellipse
+
+        DashCircle setdash
+        ThickCircle setlinewidth
+        ColorCircle setrgbcolor
+        stroke
+    } if
+
+    % Draw a character.
+    DrawCharacter
+    {
+	character
+    } if
+
+    % increment the square index by 1
+    /square_index square_index 1 add def
+} bind def
+
+% FUNCTION: fishtail_subsegment(sub_percent_from, sub_percent_to)
+% DESCRIPTION:
+%     Draw a subsegment of a fishtail.
+%
+%     The matrix in this case is already transformed, so that
+%     P(-1|0) is the lower left corner, Q(1|1) the upper right
+%     corner of the total segment.
+% SEE ALSO: fishtail
+/fishtail_subsegment
+{
+    /sub_percent_to exch def
+    /sub_percent_from exch def
+    /sub_percent_total sub_percent_to sub_percent_from sub def
+
+    % Calculate coordinates. ly / uy / dy set by fishtail.
+    /sub_ly uy dy sub_percent_to mul sub def
+    /sub_uy uy dy sub_percent_from mul sub def
+    /sub_dy sub_uy sub_ly sub def
+
+    % Alright, let's plot this thing.
+
+    -1 sub_uy moveto
+    0 sub_uy crease add lineto
+    1 sub_uy lineto
+    1 sub_ly lineto
+    
+    sub_percent_total FishtailThreshold gt
+    {
+	% If it's over the threshold, set the crease now.
+	/crease sub_dy FishtailCrease mul def
+    } if
+
+    0 sub_ly crease add lineto
+    -1 sub_ly lineto
+    closepath
+
+    pagematrix setmatrix
+
+    ColorFishtail setrgbcolor
+    fill
+
+    fishtail_matrix setmatrix
+} bind def
+
+% FUNCTION: fishtail(from_percent, to_percent, subsegments)
+% DESCRIPTION:
+%     Draw a fishtail symbol in the given range. The shape of the symbol may vary
+%     depending on the given range. For example, very short ranges will show up
+%     as a single line / rectangle. Normal shaped ranges will result in a fishtail
+%     symbol. A special case is the 0..100 one, which will draw a border around
+%     the fishtail area.
+% SEE ALSO: fishtail_segment
+/fishtail
+{
+    /subsegments exch def
+    /to_percent exch def
+    /from_percent exch def
+
+    % Step 1: We will transform the matrix in this function for convenience.
+    %         The original matrix is already kept in /pagematrix.
+
+    % fishtail may be called several times, so store fishtail_matrix only once.
+    fishtail_matrix 0 eq
+    {
+	ColumnMode
+	{
+	    % Position des Fishtails anhand der Square-Koordinaten bestimmen.
+	    columns 2 div rows position
+
+	    SpaceRight false eq
+	    {
+		exch space sub exch
+	    } if
+
+	    exch FishtailSize 2 div sub exch
+
+	    translate
+
+	    FishtailSize 2 div area_dy scale
+	}
+	{
+	    % Position anhand der Square-Koordinaten bestimmen
+            columns rows 2 div position exch width add exch
+
+	    SpaceTop false eq
+	    {
+		space sub
+	    } if
+
+	    FishtailSize 2 div sub
+	    
+	    translate
+	    90 rotate
+	    FishtailSize 2 div area_dx scale
+	} ifelse
+
+	% We may have to switch between matrices, so store this new one as well.
+	/fishtail_matrix matrix currentmatrix def
+    }
+    {
+	fishtail_matrix setmatrix
+    } ifelse
+
+    % The new matrix is as follows: -1 0 lower left corner, 1 1 upper right corner.
+    %                                x coordinate 0 is the center.
+    
+    % Step 2: Let the drawing begin!
+    from_percent 0.0 eq to_percent 1.0 eq and subsegments length 0 eq and
+    {
+	% Special case: 0-100%, no subsegments. Draw a bounding box.
+	-1 0 2 1 rectangle
+
+	pagematrix setmatrix
+
+	DashFishtail setdash
+	ThickFishtail setlinewidth
+	ColorFishtail setrgbcolor
+	stroke
+
+	fishtail_matrix setmatrix
+    }
+    {
+	% Okay, we have a certain range to fill.
+
+	% Calculate coordinates.
+	/ly 1 to_percent sub def
+	/uy 1 from_percent sub def
+	/dy uy ly sub def
+	
+	subsegments length 0 eq
+	{
+	    % Special case: solid rectangle.
+	    -1 ly 2 uy ly sub rectangle
+
+	    pagematrix setmatrix
+	    
+   	    ColorFishtail setrgbcolor
+	    fill
+
+	    fishtail_matrix setmatrix
+	}
+	{
+	    % Otherwise, draw subelements.
+	    /crease 0 def % reset crease
+	    
+	    /toggle false def
+
+	    subsegments
+	    {
+		% call once for every 2 elements
+	        toggle
+		{
+		    /toggle false def
+		    fishtail_subsegment
+		}
+		{
+		    /toggle true def
+		} ifelse
+	    } forall
+	} ifelse
+    } ifelse
+
+    % Restore the original matrix
+    pagematrix setmatrix
+} bind def
+
+
+% FUNCTION: drawpage
+% DESCRIPTION:
+%     After the final layout of a page was determined, begin drawing the page.
+%     A page has various elements: horizontal and vertical lines of squares,
+%     spacing rectangles, centerlines, circles, text inside the squares,
+%     a page border, Headlines, and footnote.
+%
+%     Wether all of these elements will be drawn, and how they will be drawn,
+%     depends on the Style settings configured above. The layout of the page
+%     is fixed, however, so even if you decide not to draw the spacings, there
+%     will be a space anyway, just not made extra visible with a box.
+% SEE ALSO: layout
+/drawpage
+{
+    % Showpage tends to kill the current matrix we want to keep.
+    % So restore it first here.
+    pagematrix setmatrix
+
+    DrawCharacter
+    {
+	% Initialize the character font here, so we don't have to do it
+	% for every single character again.
+	CharacterFont findfont height CharacterScale mul scalefont setfont
+    } if
+
+    % Step 1: Loop through rows and columns and draw squares and their contents.
+    %         The squares are drawn in proper order, as this affects the order
+    %         in which characters are drawn as well.
+
+    ColumnMode
+    {
+        1 1 columns
         {
-            DrawSquareDash 0 setdash
-            DrawSquareThick setlinewidth
-            DrawSquareColor 0 get
-            DrawSquareColor 1 get
-            DrawSquareColor 2 get
-                setrgbcolor
+            /c_column exch def
 
-            % Must draw the square like this, otherwise dashed lines will dash each other out
-            my_px my_py moveto my_px SquareWidth add my_py lineto stroke
-            my_px my_py moveto my_px my_py SquareHeight add lineto stroke
-            my_px SquareWidth add my_py moveto my_px SquareWidth add my_py SquareHeight add lineto stroke
-            my_px my_py SquareHeight add moveto my_px SquareWidth add my_py SquareHeight add lineto stroke
-        } if
-
-        DrawCharacter
-        {
-            DrawCharacterColor 0 get
-            DrawCharacterColor 1 get
-            DrawCharacterColor 2 get
-                setrgbcolor
-
-            % Determine number of squares each character takes up.
-            cc 0 eq
+            % Draw the contents of the squares in order
+            1 1 rows
             {
-                /cc cc CharacterDash { add } forall def
-            } if
-
-            % Determine which character we are at.
-            /ci cx SquareLines mul cy add def
-            /ci SquareLines SquareColumns mul 1 sub  ci sub def
-            /cn ci cc mod def  % nth time we draw it
-            /ci ci cc idiv def % ith character
-
-            % Draw or Skip?
-            /cs 0 def
-
-            0 1 CharacterDash length 1 sub
-            {
-                /element exch def % the element of the dash array
-
-                cn 0 ge
-                {
-                    /cn cn CharacterDash element get sub def
-
-                    cn 0 lt
-                    {
-                        /cs element 2 mod def
-                    } if
-                } if
+                c_column exch position square
             } for
 
-            cs 0 eq  CharacterList length ci gt  and
+            % Draw the squares themselves (the whole column)
+            DrawSquare
             {
-                % Okay, we draw the character now.
-                my_px SquareWidth CharacterXPos mul add
-                my_py SquareHeight CharacterYPos mul add moveto
-                CharacterList ci get show
+                DashSquare setdash
+                ThickSquare setlinewidth
+                ColorSquare setrgbcolor
+
+                % the inner lines
+                1 1 rows 1 sub
+                {
+                    c_column exch position moveto
+                    width 0 rlineto
+                    stroke
+                } for
+
+                % The outside rectangle
+                c_column rows position width height rows mul rectangle
+                stroke
             } if
-        } if
 
-        DrawCircle
+            % Draw the spacing next to the column
+            DrawSpacing
+            {
+                c_column rows position
+
+                exch
+
+                SpaceRight
+                {
+                    width add
+                }
+                {
+                    space sub
+                } ifelse
+
+                exch
+
+                % The spacing rectangle
+                space height rows mul rectangle
+
+                DashSpacing setdash
+                ThickSpacing setlinewidth
+                ColorSpacing setrgbcolor
+                stroke
+            } if
+        } for
+    }
+    { 
+        1 1 rows
         {
-            DrawCircleDash 0 setdash
-            DrawCircleThick setlinewidth
-            DrawCircleColor 0 get
-            DrawCircleColor 1 get
-            DrawCircleColor 2 get
-                setrgbcolor
+            /c_row exch def
 
-            my_px SquareWidth 2 div add  my_py SquareHeight 2 div add
-                  SquareWidth 2 div            SquareHeight 2 div
-                  ellipse stroke
-        } if
+            % Draw the contents of the squares in order.
+            1 1 columns
+            {
+                c_row position square
+            } for
 
-        DrawCenterline
+            % Draw the squares themselves (the whole row)
+            DrawSquare
+            {
+                DashSquare setdash
+                ThickSquare setlinewidth
+                ColorSquare setrgbcolor
+
+                % the inner lines
+                2 1 columns
+                {
+                    c_row position height add moveto
+                    0 height neg rlineto
+                    stroke
+                } for
+
+                % the outside rectangle
+                1 c_row position width columns mul height rectangle
+                stroke
+            } if
+
+            % Draw the spacing next to the column
+            DrawSpacing
+            {
+                1 c_row position
+
+                SpaceTop
+                {
+                    height add
+                }
+                {
+                    space sub
+                } ifelse
+
+                width columns mul space rectangle
+
+                DashSpacing setdash
+                ThickSpacing setlinewidth
+                ColorSpacing setrgbcolor
+                stroke
+            } if
+        } for
+    } ifelse
+
+    DrawFishtail FishtailSize 0 gt and
+    {
+	/counter 0 def
+	FishtailSegments
+	{
+	    % Ein fishtail-Aufruf pro 3 Parameter.
+	    counter 2 eq
+	    {
+		/counter 0 def
+		fishtail
+	    }
+	    {
+		/counter counter 1 add def
+	    } ifelse
+	} forall
+    } if
+
+    DrawBorder
+    {
+        area_lx area_ly area_dx area_dy rectangle
+        DashBorder setdash
+        ThickBorder setlinewidth
+        ColorBorder setrgbcolor
+        stroke
+    } if
+    
+    DrawHeadline
+    {
+        /toggle true def
+
+        HeadlineSegments
         {
-            DrawCenterlineDash 0 setdash
-            DrawCenterlineThick setlinewidth
-            DrawCenterlineColor 0 get
-            DrawCenterlineColor 1 get
-            DrawCenterlineColor 2 get
-                setrgbcolor
+            /segment exch def
 
-            my_px SquareWidth 2 div add  my_py  moveto
-            my_px SquareWidth 2 div add  my_py SquareHeight add lineto
-            stroke
+            toggle
+            {
+                % toggle is true. move to beginning of next point.
 
-            my_px  my_py SquareHeight 2 div add  moveto
-            my_px SquareWidth add  my_py SquareHeight 2 div add lineto
-            stroke
-        } if
-    } def
+                area_lx area_dx segment mul add area_uy HeadlineOffset add moveto
 
-% --- Main Program ---
+                /toggle false def
+            }
+            {
+                % toggle is false. line to next point.
 
-% Step 1: Calculate the Layout of the page, load fonts, etc.
+                area_lx area_dx segment mul add area_uy HeadlineOffset add lineto
+
+                /toggle true def
+            } ifelse
+        } forall
+
+        DashHeadline setdash
+        ThickHeadline setlinewidth
+        ColorHeadline setrgbcolor
+        stroke
+    } if
+
+    DrawFootnote
+    {
+	% Initialize Font and position.
+	FootnoteFont findfont FootnoteSize scalefont setfont ColorFootnote setrgbcolor
+	
+        area_lx area_ly FootnoteOffset sub FootnoteSize sub moveto
+
+        % show it.
+	FootnotePattern
+	{
+	    1000 string cvs show
+	} forall
+    } if
+
+    showpage
+} bind def
+
+% --- Main Program: ---
+
+% Calculate page layout once.
 layout
 
-% Step 2: Start drawing squares in a loop.
-SquareColumns
+% Prepare typesetting if necessary
+prepare_typesetting
+
+% loop
 {
-    SquareLines
+    % Draw at least one page.
+    drawpage
+
+    % Continue drawing pages until all characters have been printed.
+    DrawCharacter false eq char_index CharacterList length ge or
     {
-        % draw the square
-        draw_square
-
-        % increment y counter
-        /cy cy 1 add def
-    } repeat
-
-    % increment x counter, zero y counter
-    /cx cx 1 add def
-    /cy 0 def
-} bind repeat
-
-% Draw a border around the page
-DrawPageBorder
-{
-    DrawPageBorderDash 0 setdash
-    DrawPageBorderThick setlinewidth
-    DrawPageBorderColor 0 get
-    DrawPageBorderColor 1 get
-    DrawPageBorderColor 2 get
-        setrgbcolor
-
-    lx ox add ly oy add moveto
-    lx ox add uy oy sub lineto
-    ux ox sub uy oy sub lineto
-    ux ox sub ly oy add lineto
-    closepath stroke
-} if
-
-% Draw a heading on top of the page
-DrawPageHeading
-{
-    DrawPageHeadingDash 0 setdash
-    DrawPageHeadingThick setlinewidth
-    DrawPageHeadingColor 0 get
-    DrawPageHeadingColor 1 get
-    DrawPageHeadingColor 2 get
-        setrgbcolor
-
-    lx ox add dx DrawHeadingStart mul add uy oy sub DrawHeadingSpace add moveto
-    lx ox add dx DrawHeadingEnd mul add uy oy sub DrawHeadingSpace add lineto
-    stroke
-} if
-
-% Yay, we're finished. Let's see the results.
-showpage
+	exit
+    } if
+} loop
 
 % --- End of file. ---
