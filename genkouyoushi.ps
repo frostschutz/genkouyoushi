@@ -38,6 +38,10 @@
 % ---- 2006-09-15 18:45 CEST -- Andreas Klauer -- Version 0.8 ----
 %   Read CJK text from file instead of specifying it in a string, 
 %   so we don't have to escape characters anymore.
+% ---- 2008-03-21 14:43 CEST -- Andreas Klauer -- Version 0.9 ----
+%   Fix some errors with handling the CharacterFile.
+% ---- 2008-03-21 12:29 CEST -- Andreas.Klauer -- Version 0.10 ----
+%   Fix printing of additional empty character fields.
 % ------------------------------------------------------------------------
 % Known problems:
 %   - Ghostscript does not support CJK fonts very well. If you're lucky,
@@ -46,6 +50,9 @@
 %   - Typesetting still requires more work. So far only ShiftJIS is
 %     supported and positioning of small letters and interpuncation
 %     marks is horrible.
+%   - CharacterList length and char_index handling is bogus. The length
+%     of this list is actually variable and the index jumps back to 1 all
+%     the time. This is not only unnecessary but also hard to understand.
 % ------------------------------------------------------------------------
 
 % --- Configuration ---
@@ -751,10 +758,12 @@ ThickCharacter 0 eq
 % DESCRIPTION:
 %     If drawing of characters is enabled, do first preparations here.
 %     This function does postprocessing of the character list as well
-%     as autoscaling.
+%     as autoscaling. Initialize some variables if characters are disabled.
 % SEE ALSO:
 /prepare_typesetting
 {
+    /CharacterListLength 0 def
+
     DrawCharacter
     {
         CharacterList 0 eq
@@ -886,6 +895,8 @@ ThickCharacter 0 eq
 	    /CharacterXPos ox plx sub width div def
 	    /CharacterYPos oy ply sub height div def
 	} if
+
+        /CharacterListLength CharacterList length def
     } if
 } bind def
 
@@ -1547,6 +1558,7 @@ ThickCharacter 0 eq
     char_index rows columns mul gt and
     {
 	/CharacterList CharacterList 0 rows columns mul pop_array def
+        /CharacterListLength CharacterList length def
 	/char_index char_index rows columns mul sub def
     } if
 
@@ -2071,7 +2083,7 @@ prepare_typesetting
     drawpage
 
     % Continue drawing pages until all characters have been printed.
-    DrawCharacter false eq char_index CharacterList length ge or
+    DrawCharacter false eq char_index CharacterListLength ge or
     {
 	exit
     } if
