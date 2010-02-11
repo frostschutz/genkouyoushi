@@ -1,0 +1,549 @@
+%!PS-Adobe-3.0
+% ------------------------------------------------------------------------
+% File:        genkouyoushi.ps
+% Version:     0.6    (2005-08-16 18:34 CEST)
+% Description: Japanese Manuscript Paper generator for PS printers,
+%              with configurable sizes, styles, etc.
+%
+%              This is the first program I ever wrote for Postscript; I am
+%              very unfamiliar with the syntax, so experienced PostScripters
+%              please excuse the amateur style of this program. :)
+%
+% Author:      Andreas Klauer (Andreas.Klauer@metamorpher.de)
+% Inspired by: http://www.nmhq.net/kpaper/, and Mike Rosenlofs genkoyoshi.
+% License:     GPL-2
+% ------------------------------------------------------------------------
+% Changelog:
+%
+% ---- 2005-08-16 02:15 CEST -- Andreas Klauer -- Version 0.5 ----
+%   First public release.
+% ---- 2005-08-16 18:34 CEST -- Andreas Klauer -- Version 0.6 ----
+%   Fixed some minor bugs. Added Landscape mode and configurable Heading.
+%
+% ------------------------------------------------------------------------
+
+% --- Units: ---
+/inch   { 72 mul } def         % don't change these!!
+/cm     { inch 2.54 div } def
+/mm     { inch 25.4 div } def
+
+% --- Paper Size and Orientation: ---
+
+% Default is A4 paper. See 'man gs' for other paper sizes.
+/PaperWidth  210 mm def
+/PaperHeight 297 mm def
+
+% Default is Landscape mode. Set to false if you want portrait.
+/LandScape true def
+
+% % Letter:
+% /PaperWidth  8.5 inch def
+% /PaperHeight 11  inch def
+
+% --- Paper Borders: ---
+/BorderTop      7 mm def
+/BorderBottom   7 mm def
+/BorderLeft     7 mm def
+/BorderRight    7 mm def
+
+% --- Square Size: ---
+
+% Initialization of variables. Do not modify. See below.
+/SquareAspect   0 def
+/SquareColumns  0 def
+/SquareHeight   0 def
+/SquareLines    0 def
+/SquareWidth    0 def
+
+% Choose only one of the following:
+%
+% Define a) width and height of character size directly,
+%     OR b) number of columns and aspect ratio,
+%     OR c) number of lines and aspect ratio,
+%     OR d) number of columns and number of lines (result may not be square).
+
+% a) width and height of single character.
+%    Number of lines and columns will be calculated.
+% /SquareWidth  20 mm def
+% /SquareHeight 20 mm def
+
+% Other examples:
+%
+% % b) number of columns and aspect ratio.
+% %    Size of characters and number of lines will be calculated.
+/SquareColumns  12 def
+/SquareAspect    1 def  % 1: square, >1: higher, <1: wider
+%
+% % c) number of lines and aspect ratio
+% %    Size of characters and number of columns will be calculated.
+% /SquareLines  10 def
+% /SquareAspect  1 def % 1: square, >1: higher, <1: wider
+%
+% % d) number of columns and number of lines (result may not be square).
+% %    Aspect Ratio and character size will be calculated.
+% /SquareColumns 10 def
+% /SquareLines   20 def
+
+% --- Spacing: ---
+/SpaceColumns  1 mm def  % unused space between columns
+/SpaceLines    0 mm def  % unused space between lines
+
+% --- Font and Characters: ---
+
+% !!! If you don't have Japanese font installed, this guide may be of help:
+% !!!     http://igloo.its.unimelb.edu.au/linux-online/ghostscript.html
+% !!!
+% !!! Be careful that your encoding and aspect ratio matches the font.
+
+/CharacterFont    /WadaMin-Regular-EUC-H def % Name of Font
+
+% Print characters:
+/CharacterList    [ (¿Í) (°ì) (¥Ë) (»°) (Æü) (»Í) (¸Þ) (Ï») (¼·)
+                    (È¬) (¶å) (½½) (±ß) (É´) (Àé) (Ëü) (·î) (ÌÀ) ] def
+
+% For each character, print 3, skip 4, print 1. (3+4+1=8 squares per char)
+/CharacterDash    [ 3 4 1 ] def
+
+% Adjustments relative to Square size:
+/CharacterScale   0.9  def % If the font isn't scaled right, use this value to adjust.
+/CharacterXPos    0.05 def % Adjust XPos of Character here (0.0 = left, 1.0 = right)
+/CharacterYPos    0.15 def % Adjust YPos of Character here (0.0 = bottom, 1.0 = top)
+
+% !!! Only as many characters as fit the squares can actually be printed.
+% !!! Multiple pages are not yet supported, sorry.
+
+% --- Style: ---
+
+% Specify what to draw:
+/DrawSquare      true def  % draw a square?
+/DrawCharacter   false def  % draw characters?
+/DrawCircle      false def % draw a circle?     (Hiragana practice)
+/DrawCenterline  true def  % draw centerlines?  (Kanji practice)
+/DrawPageBorder  true def % draw border around page?
+/DrawPageHeading true def % draw a heading on top of page?
+
+% Specify dashing styles:
+/DrawSquareDash      [5 5] def     % 5 on, 5 off, ...
+/DrawCircleDash      [2 4] def     % 2 on, 4 off, 2 on, 4 off...
+/DrawCenterlineDash  [1 2 3 4] def % 1 on, 2 off, 3 on, 4 off, 1 on...
+/DrawPageBorderDash  [] def        % solid
+/DrawPageHeadingDash [] def        % solid
+
+% Specify line thickness
+/DrawSquareThick      0.5 def
+/DrawCircleThick      0.2 def
+/DrawCenterlineThick  0.2 def
+/DrawPageBorderThick  1   def
+/DrawPageHeadingThick 1   def
+
+% Colors, specified in R G B (0.0 == 0 == 0x00, 1.0 == 255 == 0xFF)
+/DrawSquareColor      [0.2 0.2 0.2] def
+/DrawCharacterColor   [0.8 0.8 0.8] def
+/DrawCircleColor      [0.4 0.4 0.4] def
+/DrawCenterlineColor  [0.4 0.4 0.4] def
+/DrawPageBorderColor  [0.0 0.0 0.0] def
+/DrawPageHeadingColor [0.0 0.0 0.0] def
+
+% Position and Length of Heading
+/DrawHeadingSpace     2 mm def % 2 mm above the border.
+/DrawHeadingStart     0.25 def % Start at 25% of the page
+/DrawHeadingEnd       0.75 def % End at 75% of the page
+
+% --- Maximizing ---
+
+% MaximizeSquares:
+%     After determining number of lines and columns that fit on a page,
+%     the square size will be maximized to print the Squares as big as
+%     possible to fill the page completely.
+%
+% !!! Aspect Ratio will be lost (result may be skewed and unusable)
+/MaximizeSquares  false def
+
+% ------------------------------------------------------------------------
+%          Below is the program that generates the Genkou Youshi.
+%           Do not modify it unless you know what you are doing.
+% ------------------------------------------------------------------------
+
+% --- Variables: ---
+
+%
+% Complaints about these variable names? I sincerely apologize.
+% But it could be worse... I could've called them i, ii, iii, iiii, iiiii...
+%
+
+/lx 0 def % drawable area A(lx,ly,ux,uy)
+/ux 0 def
+/ly 0 def
+/uy 0 def
+/dx 0 def % x / y deltas
+/dy 0 def
+/tx 0 def % x / y totals (actually used space)
+/ty 0 def
+/ox 0 def % x / y offset (required if used space smaller than actual space
+/oy 0 def %               for centering page content)
+/px 0 def % x / y position P(x,y)
+/py 0 def
+/cx 0 def % x / y square count for the loop
+/cy 0 def
+/cc 0 def % character count - how many squares are required per character?
+/ci 0 def % character index - which character to draw?
+/cn 0 def % nth character to draw
+/cs 0 def % draw or skip?
+
+% --- Procedures: ---
+
+%%%%
+% PROCEDURE: not_initialized
+% DESCRIPTION:
+%     Returns true, if variables are not yet initialized.
+%     Used by layout.
+% SEE ALSO: layout
+%%%%
+/not_initialized
+    {
+        SquareLines 0 eq
+        SquareColumns 0 eq or
+        SquareWidth 0 eq or
+        SquareHeight 0 eq or
+        SquareAspect 0 eq or
+    } def
+
+%%%%
+% PROCEDURE: layout
+% DESCRIPTION:
+%     The layout procedure will calculate the layout of the page according
+%     to the specifications made above. The square size / number of lines /
+%     number of columns / aspect ratio will be calculated to best fit the page.
+% SEE ALSO:
+%%%%
+/layout % calls itself recursively!
+    {
+        LandScape
+        {
+            % Switch PaperHeight and PaperWidth.
+            PaperHeight PaperWidth /PaperHeight exch def /PaperWidth exch def
+
+            % Rotate Borders.
+            BorderTop BorderBottom BorderLeft BorderRight
+                /BorderBottom exch def /BorderTop exch def
+                /BorderLeft exch def /BorderRight exch def
+
+            % Rotate coordinate system for Landscape mode.
+            % Thanks to the Postscript FAQ for this rotation code.
+            /oldshowpage /showpage load def
+
+            90 rotate 0 PaperHeight neg translate   % for the first page
+            /showpage
+            {
+                oldshowpage
+                90 rotate 0 PaperHeight neg translate
+            } def
+
+            /LandScape false def % to avoid recursion.
+        } if
+
+        /lx BorderLeft def
+        /ly BorderBottom def
+        /ux PaperWidth BorderRight sub def
+        /uy PaperHeight BorderTop sub def
+
+        /dx ux lx sub def
+        /dy uy ly sub def
+
+        % Step 1: Calculate width, height, columns, lines, aspect
+
+        % a) width & height
+        SquareWidth 0 ne  SquareHeight 0 ne  and not_initialized and
+        {
+            % SquareLines = floor((dy + SpaceLines) /
+            %                      (SquareHeight + SpaceLines))
+            /SquareLines  dy SpaceLines add
+                          SquareHeight SpaceLines add
+                          div cvi def
+
+            % SquareColumns = floor((dx + SpaceColumns) /
+            %                        (SquareWidth + SpaceColumns))
+            /SquareColumns dx SpaceColumns add
+                           SquareWidth SpaceColumns add
+                           div cvi def
+
+            % SquareAspect = SquareHeight / SquareWidth
+            /SquareAspect SquareHeight SquareWidth div def
+        } if
+
+        % b) columns & aspect
+        SquareColumns 0 ne  SquareAspect 0 ne  and not_initialized and
+        {
+            % SquareWidth = (dx + SpaceColumns / SquareColumns) - SpaceColumns
+            /SquareWidth dx SpaceColumns add  SquareColumns div
+                         SpaceColumns sub def
+
+            % SquareHeight = SquareWidth * SquareAspect
+            /SquareHeight SquareWidth SquareAspect mul def
+
+            % SquareLines = floor((dy + SpaceLines) /
+            %                      (SquareHeight + SpaceLines))
+            /SquareLines dy SpaceLines add
+                            SquareHeight SpaceLines add
+                            div cvi def
+        } if
+
+        % c) lines & aspect
+        SquareLines 0  ne  SquareAspect 0 ne  and not_initialized and
+        {
+            % SquareHeight = ((dy + SpaceLines) / SquareLines) - SpaceLines
+            /SquareHeight dy SpaceLines add  SquareLines div
+                          SpaceLines sub def
+
+            % SquareWidth = SquareHeight / SquareAspect
+            /SquareWidth SquareHeight SquareAspect div def
+
+            % SquareColumns = floor((dx + SpaceColumns) /
+            %                        (SquareWidth + SpaceColumns))
+            /SquareColumns dx SpaceColumns add
+                           SquareWidth SpaceColumns add
+                           div cvi def
+        } if
+
+        % d) columns & lines
+        SquareColumns 0 ne  SquareLines 0 ne  and not_initialized and
+        {
+            % SquareWidth = ((dx + SpaceColumns) / SquareColumns)
+            %                - SpaceColumns
+            /SquareWidth dx SpaceColumns add  SquareColumns div
+                         SpaceColumns sub def
+
+            % SquareHeight = ((dy + SpaceLines) / SquareLines) - SpaceLines
+            /SquareHeight dy SpaceLines add  SquareLines div
+                          SpaceLines sub def
+
+            % SquareAspect = SquareHeight / SquareWidth
+            /SquareAspect = SquareHeight SquareWidth div
+        } if
+
+        % Step 2: Calculate actually used space and page centering offset.
+        /tx SquareWidth SpaceColumns add  SquareColumns mul
+            SpaceColumns sub def
+        /ty SquareHeight SpaceLines add  SquareLines mul
+            SpaceLines sub def
+        /ox dx tx sub  2 div def
+        /oy dy ty sub  2 div def
+
+        MaximizeSquares
+        {
+            % Keep number of columns and lines and calculate everything again.
+            % This will cause the page to be filled at maximum, but result
+            % might be rectangular because aspect ratio is lost.
+            /SquareWidth 0 def
+            /SquareHeight 0 def
+            /SquareAspect 0 def
+            /MaximizeSquares false def % to avoid endless recursion
+            layout % recursive call
+        }
+        {
+            DrawCharacter
+            {
+                % load font for later drawing
+                CharacterFont findfont
+                SquareHeight CharacterScale mul scalefont
+                setfont
+            } if
+        } ifelse
+    } def
+
+%%%%
+% PROCEDURE: ellipse (x y xr yr)
+% DESCRIPTION:
+%     Procedure taken from Usenet:
+%
+%         From: Henry McGilton <h...@trilithon.com>
+%         Subject: Re: Drawing ellipses with wide lines
+%         Date: 1998/04/21
+%         Message-ID: <353CCE54.D3D0B451@trilithon.com>#1/1
+%
+%     Thank you!
+%
+%     Ideally we'd only need a circle (with square aspect ratio == 1),
+%     but with squares that are not perfectly square we need Ellipse.
+%     This procedure makes otherwise complicated ellipse drawing easy.
+% SEE ALSO: DrawSquare
+%%%%
+/ellipse
+    {                                   %  stack = x y xr yr
+        matrix currentmatrix            %  remember CTM
+        5 3 roll translate              %  translate coordinate system
+        3 1 roll scale                  %  scale coordinate system
+        0 0 1 0 360 arc closepath       %  draw circle
+        setmatrix                       %  restore CTM
+    } def
+
+%%%%
+% PROCEDURE: draw_square
+% DESCRIPTION:
+%     Draw square number (cx,cy) in the style that was configured above.
+%     This procedure draws square, circle, centerlines, ...
+% SEE ALSO: ellipse
+%%%%
+/draw_square
+    {
+        % my_px = BorderLeft + ox + (SquareWidth + SpaceColumns) * cx
+        /my_px BorderLeft ox add  SquareWidth SpaceColumns add  cx mul add def
+
+        % my_py = BorderBottom + oy + (SquareHeight + SpaceLines) * cy
+        /my_py BorderBottom oy add  SquareHeight SpaceLines add  cy mul add def
+
+        % Draw the elements as requested:
+
+        DrawSquare
+        {
+            DrawSquareDash 0 setdash
+            DrawSquareThick setlinewidth
+            DrawSquareColor 0 get
+            DrawSquareColor 1 get
+            DrawSquareColor 2 get
+                setrgbcolor
+
+            % Must draw the square like this, otherwise dashed lines will dash each other out
+            my_px my_py moveto my_px SquareWidth add my_py lineto stroke
+            my_px my_py moveto my_px my_py SquareHeight add lineto stroke
+            my_px SquareWidth add my_py moveto my_px SquareWidth add my_py SquareHeight add lineto stroke
+            my_px my_py SquareHeight add moveto my_px SquareWidth add my_py SquareHeight add lineto stroke
+        } if
+
+        DrawCharacter
+        {
+            DrawCharacterColor 0 get
+            DrawCharacterColor 1 get
+            DrawCharacterColor 2 get
+                setrgbcolor
+
+            % Determine number of squares each character takes up.
+            cc 0 eq
+            {
+                /cc cc CharacterDash { add } forall def
+            } if
+
+            % Determine which character we are at.
+            /ci cx SquareLines mul cy add def
+            /ci SquareLines SquareColumns mul 1 sub  ci sub def
+            /cn ci cc mod def  % nth time we draw it
+            /ci ci cc idiv def % ith character
+
+            % Draw or Skip?
+            /cs 0 def
+
+            0 1 CharacterDash length 1 sub
+            {
+                /element exch def % the element of the dash array
+
+                cn 0 ge
+                {
+                    /cn cn CharacterDash element get sub def
+
+                    cn 0 lt
+                    {
+                        /cs element 2 mod def
+                    } if
+                } if
+            } for
+
+            cs 0 eq  CharacterList length ci gt  and
+            {
+                % Okay, we draw the character now.
+                my_px SquareWidth CharacterXPos mul add
+                my_py SquareHeight CharacterYPos mul add moveto
+                CharacterList ci get show
+            } if
+        } if
+
+        DrawCircle
+        {
+            DrawCircleDash 0 setdash
+            DrawCircleThick setlinewidth
+            DrawCircleColor 0 get
+            DrawCircleColor 1 get
+            DrawCircleColor 2 get
+                setrgbcolor
+
+            my_px SquareWidth 2 div add  my_py SquareHeight 2 div add
+                  SquareWidth 2 div            SquareHeight 2 div
+                  ellipse stroke
+        } if
+
+        DrawCenterline
+        {
+            DrawCenterlineDash 0 setdash
+            DrawCenterlineThick setlinewidth
+            DrawCenterlineColor 0 get
+            DrawCenterlineColor 1 get
+            DrawCenterlineColor 2 get
+                setrgbcolor
+
+            my_px SquareWidth 2 div add  my_py  moveto
+            my_px SquareWidth 2 div add  my_py SquareHeight add lineto
+            stroke
+
+            my_px  my_py SquareHeight 2 div add  moveto
+            my_px SquareWidth add  my_py SquareHeight 2 div add lineto
+            stroke
+        } if
+    } def
+
+% --- Main Program ---
+
+% Step 1: Calculate the Layout of the page, load fonts, etc.
+layout
+
+% Step 2: Start drawing squares in a loop.
+SquareColumns
+{
+    SquareLines
+    {
+        % draw the square
+        draw_square
+
+        % increment y counter
+        /cy cy 1 add def
+    } repeat
+
+    % increment x counter, zero y counter
+    /cx cx 1 add def
+    /cy 0 def
+} bind repeat
+
+% Draw a border around the page
+DrawPageBorder
+{
+    DrawPageBorderDash 0 setdash
+    DrawPageBorderThick setlinewidth
+    DrawPageBorderColor 0 get
+    DrawPageBorderColor 1 get
+    DrawPageBorderColor 2 get
+        setrgbcolor
+
+    lx ox add ly oy add moveto
+    lx ox add uy oy sub lineto
+    ux ox sub uy oy sub lineto
+    ux ox sub ly oy add lineto
+    closepath stroke
+} if
+
+% Draw a heading on top of the page
+DrawPageHeading
+{
+    DrawPageHeadingDash 0 setdash
+    DrawPageHeadingThick setlinewidth
+    DrawPageHeadingColor 0 get
+    DrawPageHeadingColor 1 get
+    DrawPageHeadingColor 2 get
+        setrgbcolor
+
+    lx ox add dx DrawHeadingStart mul add uy oy sub DrawHeadingSpace add moveto
+    lx ox add dx DrawHeadingEnd mul add uy oy sub DrawHeadingSpace add lineto
+    stroke
+} if
+
+% Yay, we're finished. Let's see the results.
+showpage
+
+% --- End of file. ---
